@@ -50,6 +50,7 @@ def main():
     print("Displaying LED Matrix...")
     nuimo.write_matrix(MATRIX_SHUFFLE, interval)
 
+    print("Waiting for Nuimo events, use CTRL+C to quit")
     # Nuimo events are dispatched in the background
     time.sleep(100000)
 

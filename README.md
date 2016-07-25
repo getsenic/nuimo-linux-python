@@ -7,16 +7,27 @@
 On Linux the [Bluez](http://www.bluez.org/) library is necessary to access your inbuilt Bluetooth controller or Bluetooth USB dongle.
 If you are using a Raspberry Pi, the Bluez library is pre-installed in Raspian Jessie. The Raspberry Pi 3 comes with Bluetooth Controller hardware. 
 
+For convenience, the following groups of commands are included in a shell script **examples/verify.sh**
+
 1. `bluetoothd --version` (Shows the version of the pre-installed bluez. **bluetoothd** daemon must run at startup to use Bluez)
 2. `sudo apt-get install --no-install-recommends bluetooth` (Installs Bluez)
 
+**or**
+```
+sh examples/verify.sh install
+```
 ##### Using bluez commandline tools 
 Bluez also provides commandline tools such as **hciconfig, hcitool, bluetoothctl** to interact with Bluetooth devices.
+**bluetoothctl** was introduced in Bluez version 5.0 but many Linux distributions are still using Bluez 4.x.
 
 1. `sudo hciconfig hci0 up` (Enables your Bluetooth dongle)
 2. `sudo hcitool lescan` (Should discover your Nuimo, press Ctrl+C to stop discovery)
 3. `bluetoothctl devices` (Lists the previously paired peripherals)
 
+**or**
+```
+sh examples/verify.sh scan
+```
 ##### Manually connect to Nuimo with bluez (optional, skip this step if you are not interested)
 
 1. `sudo hcitool lescan | grep Nuimo` (Copy your Nuimo's MAC address and press Ctrl+C to stop discovery)
@@ -29,98 +40,127 @@ Bluez also provides commandline tools such as **hciconfig, hcitool, bluetoothctl
 8. Hold Nuimo's click button pressed and release it. `gatttool` should now notify all button press events.
 8. `exit` to leave `gatttool`
 
+**or**
+```
+sh examples/verify.sh connect
+```
 ### 2. Install Pygattlib
-[Pygattlib](https://github.com/matthewelse/pygattlib) is a Python library to use the GATT Protocol for Bluetooth LE devices. It is a wrapper around the implementation used by gatttool in bluez package. It does not call other binaries to do its job.
+[Pygattlib](https://github.com/matthewelse/pygattlib) is a Python library to use the GATT Protocol for Bluetooth LE devices. It is a wrapper around the implementation used by gatttool in the bluez package. Unlike some other Python Bluetooth libraries, Pygattlib does not need invoke any external programs.
 
+**Known Issues**
+Pygattlib may not be reliable on your platform.  We are investigating these issues at Senic.
+1. The library sometimes appears to get 'stuck', especially when executing `discover_characteristics`.
+2. With Python 3, Pygattlib handles some numbers incorrectly, this typically occurs when the Nuimo sends rotate or fly events.
+You may see messages such as *UnicodeDecodeError: 'utf-8' codec can't decode byte 0x82 in position 3: invalid start byte*.
+
+To install Pygattlib automatically run the following commands.  The steps are also described below should you wish to follow them manually. 
+```
+sh examples/verify.py pygattlib  # For Python 2.x
+sh examples/verify.py py3gattlib # For Python 3.x
+```
 ##### Install the dependencies
 1. `sudo apt-get install pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev`
 
 ##### Installing Pygattlib
 1. `git clone https://github.com/matthewelse/pygattlib`
 2. `cd pygattlib`
-3. `sudo python setup.py install` (It installs **gattlib.so** to the folder **/usr/local/lib/python2.7/dist-packages** on Raspberry Pi )
+3. `sudo python setup.py install`  (Installs **gattlib.so** to **/usr/local/lib/python2.7/dist-packages**)
+4. `sudo python3 setup.py install` (Installs **gattlib.cpython-34m.so** and support files to **/usr/local/lib/python3.4/dist-packages/gattlib*.egg**)
 
 ### 3. Install Nuimo Python SDK
-1. `git clone https://github.com/getsenic/nuimo-linux-osx-python`
-2. `cd nuimo-linux-osx-python`
-3. `sudo python setup.py install`
+1. `git clone https://github.com/getsenic/nuimo-linux-python`
+2. `cd nuimo-linux-python`
+3. `cp nuimo/nuimo.py <your project directory> # The Nuimo SDK is a single file`
 
 ## Usage
-### 1. Linux 
-**nuimo** SDK is installed as python module at **/usr/local/lib/python2.7/dist-packages** on Linux and it can be imported simply by adding `from nuimo import Nuimo`
+The **Nuimo** SDK is a single Python source file.  It has been tested with Python 2.7 and Python 3.4.
 
-#### Example
+#### Testing
+To test, run the following command (note that it must be run as root because on Linux, Bluetooth discovery is a restricted operation).
+```
+sudo PYTHONPATH=./nuimo python examples/nuimo.py
+```
+
+#### Usage
 ```python
-from threading import Event
-from nuimo import Nuimo
+
+import time
+import sys
+from nuimocore import NuimoDiscoveryManager
+
+
+def main():
+    # Uncomment the next 2 lines to enable detailed logging
+    # import logging
+    # logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+
+    # Discover Nuimo Controllers
+    # Note:
+    #   1) Discovery is a synchronous operation i.e. other Python activity is paused
+    #   2) Discovery must be run as the root user
+    #   3) If the Nuimo MAC address is known, the NuimoController can be instantiated directly.
+    #      For example:
+    #          nuimo = NuimoController('D0:DF:D2:8F:49:B6')
+
+    adapter = 'hci0'  # Typical bluetooth adapter name
+    nuimo_manager = NuimoDiscoveryManager(bluetooth_adapter=adapter, delegate=DiscoveryLogger())
+    nuimo_manager.start_discovery()
+
+    # Were any Nuimos found?
+    if len(nuimo_manager.nuimos) == 0:
+        print('No Nuimos detected')
+        sys.exit(0)
+
+    # Take the first Nuimo found.
+    nuimo = nuimo_manager.nuimos[0]
+
+    # Set up handling of Nuimo events.
+    # In this case just log each incoming event.
+    # NuimoLogger is defined below.
+    nuimo_event_delegate = NuimoLogger()
+    nuimo.set_delegate(nuimo_event_delegate)
+
+    # Attach to the Nuimo.
+    nuimo.connect()
+
+    # Display an icon for 2 seconds
+    interval = 2.0
+    print("Displaying LED Matrix...")
+    nuimo.write_matrix(MATRIX_SHUFFLE, interval)
+
+    # Nuimo events are dispatched in the background
+    time.sleep(100000)
+
+    nuimo.disconnect()
+
+# Example matrix for the Nuimo display
+# Must be 9x9 characters.
+MATRIX_SHUFFLE = (
+    "         " +
+    "         " +
+    " ..   .. " +
+    "   . .   " +
+    "    .    " +
+    "   . .   " +
+    " ..   .. " +
+    "         " +
+    "         ")
+
+
+class DiscoveryLogger:
+    """ Handle Nuimo Discovery callbacks. """
+    def controller_added(self, nuimo):
+        print("added Nuimo: {}".format(nuimo))
+
+
+class NuimoLogger:
+    """ Handle Nuimo Controller event callbacks by printing the events. """
+
+    def received_gesture_event(self, event):
+        print("received event: name={}, gesture_id={}, value={}".format(event.name, event.gesture, event.value))
 
 if __name__ == '__main__':
-    print '=== Nuimo Python SDK ==='
-    nuimo = Nuimo()
-
-    print 'Discovering Nuimos with default timeout 5 seconds, default adapter hci0...'
-    discovered_nuimos = nuimo.discover_nuimos()
-    print 'Discovered Nuimos', discovered_nuimos
-
-    print 'Connecting to Nuimo', discovered_nuimos[0]
-    rv = nuimo.connect(address=discovered_nuimos[0])
-    print 'Nuimo connected: ', rv
-
-    print 'Displaying LED Matrix...'
-    timeout = 5.0
-    rv = nuimo.display_led(
-        "         " +
-        " ***     " +
-        " *  * *  " +
-        " *  *    " +
-        " ***  *  " +
-        " *    *  " +
-        " *    *  " +
-        " *    *  " +
-        "         ", timeout)
-    print 'LED Matrix written: ', rv
-
-    print 'Reading battery voltage...'
-    battery_val = ord(nuimo.read_battery()[0])
-    print 'Nuimo battery is {0} percent'.format(battery_val)
-
-
-    def button_click_cb(data):
-        print 'Button Click', data
-
-
-    print 'Enabling button click...'
-    rv = nuimo.enable_button_click_notification(button_click_cb)
-    print 'Button click notification enabled:', rv
-
-
-    def rotation_cb(data):
-        print 'Rotated', data
-
-
-    print 'Enabling Rotation...'
-    rv = nuimo.enable_rotation_notification(rotation_cb)
-    print 'Rotation notification enabled:', rv
-
-
-    def swipe_cb(data):
-        print 'Swiped', data
-
-
-    print 'Enabling swiping...'
-    rv = nuimo.enable_swipe_notification(swipe_cb)
-    print 'Swipe notification enabled:', rv
-
-
-    def fly_cb(data):
-        print 'Gesture', data
-
-
-    print 'Enabling fly gestures...'
-    rv = nuimo.enable_fly_notification(fly_cb)
-    print 'Fly gesture notification enabled:', rv
-
-    Event().wait()
+    main()
 
 ```
  
