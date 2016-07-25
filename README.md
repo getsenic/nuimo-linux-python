@@ -85,11 +85,6 @@ To test, run the following command (note that it must be run as root because on 
 ```
 sudo PYTHONPATH=./nuimo python examples/test.py
 ```
-**or**
-```
-```
-examples
-```
 #### Usage
 ```python
 

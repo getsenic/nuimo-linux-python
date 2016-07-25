@@ -212,7 +212,6 @@ class NuimoController(gattlib.GATTRequester):
 
     @staticmethod
     def fly_event(received_data):
-        # TODO: other fly gestures
         directions = [NuimoGestureEvent.FLY_LEFT, NuimoGestureEvent.FLY_RIGHT,
                       NuimoGestureEvent.FLY_TOWARD, NuimoGestureEvent.FLY_BACKWARDS,
                       NuimoGestureEvent.FLY_UP_DOWN]
