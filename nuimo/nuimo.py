@@ -318,11 +318,15 @@ class NuimoDiscoveryManager(object):
 
     def start_discovery(self):
         self.log("started Nuimo discovery")
+        if self.delegate:
+            self.delegate.discovery_started()
         all_discovered_devices = self.discovery_service.discover(int(self.timeout))
         self.log_devices(all_discovered_devices)
         self.nuimos = self.create_nuimos(all_discovered_devices)
         self.log_nuimos(self.nuimos)
         self.fire_callbacks()
+        if self.delegate:
+            self.delegate.discovery_finished()
 
     def stop_discovery(self):
         self.log("stopped Nuimo discovery")

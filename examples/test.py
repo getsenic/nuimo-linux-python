@@ -4,11 +4,11 @@
 # This software may be modified and distributed under the terms
 # of the MIT license.  See the LICENSE file for details.
 
-"""nuimo.py - Sample code for Nuimo controller"""
+"""test.py - Sample code for Nuimo controller"""
 
 import time
 import sys
-from nuimocore import NuimoDiscoveryManager
+from nuimo import NuimoDiscoveryManager
 
 
 def main():
@@ -72,6 +72,12 @@ MATRIX_SHUFFLE = (
 
 class DiscoveryLogger:
     """ Handle Nuimo Discovery callbacks. """
+    def discovery_started(self):
+        print("started discovery")
+
+    def discovery_finished(self):
+        print("finished discovery")
+        
     def controller_added(self, nuimo):
         print("added Nuimo: {}".format(nuimo))
 

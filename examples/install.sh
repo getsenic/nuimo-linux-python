@@ -1,5 +1,5 @@
 
-# Script to verify correct operation of Nuimo Controller
+# Script to install Nuimo support
 
 cmd=$1
 
@@ -60,10 +60,22 @@ case "$cmd" in
     nuimosdk)
 	echo "Installing Nuimo SDK"
 	set -x
-	git clone https://github.com/getsenic/nuimo-linux-python
-	cd nuimo-linux-python &&  cp nuimo/nuimo.py your project directory
+	[ ! -d nuimo-linux-python ] && git clone https://github.com/getsenic/nuimo-linux-python
+	echo "Copy $(pwd)/nuimo-linux-python/nuimo/nuimo.py to your project directory"
 	;;
+
+    test)
+	echo "Testing Nuimo SDK"
+	sdk="nuimo-linux-python"
+	set -x
+	[ -f $sdk/examples/test.py ] && { sudo PYTHONPATH=$sdk/nuimo python $sdk/examples/test.py; exit 0; }
+	[ -f examples/test.py ] && { sudo PYTHONPATH=./nuimo python examples/test.py; exit 0; }
+        set +x
+	echo "Please install the Nuimo SDK: sh $0 nuimosdk "
+	;;
+
     *)
-	echo "Usage: sh $0 [install | scan | connect | pygattlib | py3gattlib | nuimosdk]"
+	echo "Usage: sh $0 [install | scan | connect | pygattlib | py3gattlib | nuimosdk | test]"
 	;;
+
 esac

@@ -1,20 +1,27 @@
 # Nuimo Python SDK
 
 ## Installation
+These instructions assume a Debian-based Linux.
+
+1. `git clone https://github.com/getsenic/nuimo-linux-python`
+2. `cd nuimo-linux-python`
+
+The remainder of these instructions assume nuimo-linux-python is the current directory.
+
+For convenience, the following groups of commands are included in a shell script **examples/install.sh**
+
 
 ### 1. Install bluez (Linux)
 
 On Linux the [Bluez](http://www.bluez.org/) library is necessary to access your inbuilt Bluetooth controller or Bluetooth USB dongle.
 If you are using a Raspberry Pi, the Bluez library is pre-installed in Raspian Jessie. The Raspberry Pi 3 comes with Bluetooth Controller hardware. 
 
-For convenience, the following groups of commands are included in a shell script **examples/verify.sh**
-
 1. `bluetoothd --version` (Shows the version of the pre-installed bluez. **bluetoothd** daemon must run at startup to use Bluez)
 2. `sudo apt-get install --no-install-recommends bluetooth` (Installs Bluez)
 
 **or**
 ```
-sh examples/verify.sh install
+sh examples/install.sh install
 ```
 ##### Using bluez commandline tools 
 Bluez also provides commandline tools such as **hciconfig, hcitool, bluetoothctl** to interact with Bluetooth devices.
@@ -26,7 +33,7 @@ Bluez also provides commandline tools such as **hciconfig, hcitool, bluetoothctl
 
 **or**
 ```
-sh examples/verify.sh scan
+sh examples/install.sh scan
 ```
 ##### Manually connect to Nuimo with bluez (optional, skip this step if you are not interested)
 
@@ -42,7 +49,7 @@ sh examples/verify.sh scan
 
 **or**
 ```
-sh examples/verify.sh connect
+sh examples/install.sh connect
 ```
 ### 2. Install Pygattlib
 [Pygattlib](https://github.com/matthewelse/pygattlib) is a Python library to use the GATT Protocol for Bluetooth LE devices. It is a wrapper around the implementation used by gatttool in the bluez package. Unlike some other Python Bluetooth libraries, Pygattlib does not need invoke any external programs.
@@ -55,8 +62,8 @@ You may see messages such as *UnicodeDecodeError: 'utf-8' codec can't decode byt
 
 To install Pygattlib automatically run the following commands.  The steps are also described below should you wish to follow them manually. 
 ```
-sh examples/verify.py pygattlib  # For Python 2.x
-sh examples/verify.py py3gattlib # For Python 3.x
+sh examples/test.py pygattlib  # For Python 2.x
+sh examples/test.py py3gattlib # For Python 3.x
 ```
 ##### Install the dependencies
 1. `sudo apt-get install pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev`
@@ -68,9 +75,7 @@ sh examples/verify.py py3gattlib # For Python 3.x
 4. `sudo python3 setup.py install` (Installs **gattlib.cpython-34m.so** and support files to **/usr/local/lib/python3.4/dist-packages/gattlib*.egg**)
 
 ### 3. Install Nuimo Python SDK
-1. `git clone https://github.com/getsenic/nuimo-linux-python`
-2. `cd nuimo-linux-python`
-3. `cp nuimo/nuimo.py <your project directory> # The Nuimo SDK is a single file`
+1. `cp nuimo/nuimo.py <your project directory> # The Nuimo SDK is a single file`
 
 ## Usage
 The **Nuimo** SDK is a single Python source file.  It has been tested with Python 2.7 and Python 3.4.
@@ -78,15 +83,19 @@ The **Nuimo** SDK is a single Python source file.  It has been tested with Pytho
 #### Testing
 To test, run the following command (note that it must be run as root because on Linux, Bluetooth discovery is a restricted operation).
 ```
-sudo PYTHONPATH=./nuimo python examples/nuimo.py
+sudo PYTHONPATH=./nuimo python examples/test.py
 ```
-
+**or**
+```
+```
+examples
+```
 #### Usage
 ```python
 
 import time
 import sys
-from nuimocore import NuimoDiscoveryManager
+from nuimo import NuimoDiscoveryManager
 
 
 def main():
@@ -166,7 +175,7 @@ if __name__ == '__main__':
  
 #### Tested on
 1. Raspberry Pi Model 3 - Raspbian Jessie Full (raspberrypi 4.1.18)
-
+2. Linux Mint 17.3 Rosa
 
 
 
