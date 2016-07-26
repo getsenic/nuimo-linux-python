@@ -6,7 +6,7 @@ These instructions assume a Debian-based Linux.
 1. `git clone https://github.com/getsenic/nuimo-linux-python`
 2. `cd nuimo-linux-python`
 
-The remainder of these instructions assume nuimo-linux-python is the current directory.
+The remainder of these instructions assume `nuimo-linux-python` is the current directory.
 
 For convenience, the following groups of commands are included in a shell script **examples/install.sh**
 
@@ -23,7 +23,7 @@ If you are using a Raspberry Pi, the Bluez library is pre-installed in Raspian J
 ```
 sh examples/install.sh install
 ```
-##### Using bluez commandline tools 
+#### Using bluez commandline tools 
 Bluez also provides commandline tools such as **hciconfig, hcitool, bluetoothctl** to interact with Bluetooth devices.
 **bluetoothctl** was introduced in Bluez version 5.0 but many Linux distributions are still using Bluez 4.x.
 
@@ -35,7 +35,7 @@ Bluez also provides commandline tools such as **hciconfig, hcitool, bluetoothctl
 ```
 sh examples/install.sh scan
 ```
-##### Manually connect to Nuimo with bluez (optional, skip this step if you are not interested)
+#### Manually connect to Nuimo with bluez (optional, skip this step if you are not interested)
 
 1. `sudo hcitool lescan | grep Nuimo` (Copy your Nuimo's MAC address and press Ctrl+C to stop discovery)
 2. `gatttool -b FA:48:12:00:CA:AC -t random -I` (Replace the MAC address with the address from step 1)
@@ -65,10 +65,10 @@ To install Pygattlib automatically run the following commands.  The steps are al
 sh examples/test.py pygattlib  # For Python 2.x
 sh examples/test.py py3gattlib # For Python 3.x
 ```
-##### Install the dependencies
+#### Install the dependencies
 1. `sudo apt-get install pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev`
 
-##### Installing Pygattlib
+#### Installing Pygattlib
 1. `git clone https://github.com/matthewelse/pygattlib`
 2. `cd pygattlib`
 3. `sudo python setup.py install`  (Installs **gattlib.so** to **/usr/local/lib/python2.7/dist-packages**)
@@ -171,12 +171,4 @@ if __name__ == '__main__':
 #### Tested on
 1. Raspberry Pi Model 3 - Raspbian Jessie Full (raspberrypi 4.1.18)
 2. Linux Mint 17.3 Rosa
-
-
-
-
-
-
-
-
 
