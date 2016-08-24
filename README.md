@@ -52,13 +52,11 @@ sh examples/install.sh scan
 sh examples/install.sh connect
 ```
 ### 2. Install Pygattlib
-[Pygattlib](https://github.com/matthewelse/pygattlib) is a Python library to use the GATT Protocol for Bluetooth LE devices. It is a wrapper around the implementation used by gatttool in the bluez package. Unlike some other Python Bluetooth libraries, Pygattlib does not need invoke any external programs.
+[Pygattlib](https://bitbucket.org/OscarAcena/pygattlib) is a Python library to use the GATT Protocol for Bluetooth LE devices. It is a wrapper around the implementation used by gatttool in the bluez package. Unlike some other Python Bluetooth libraries, Pygattlib does not need invoke any external programs.
 
 **Known Issues**
 Pygattlib may not be reliable on your platform.  We are investigating these issues at Senic.
 1. The library sometimes appears to get 'stuck', especially when executing `discover_characteristics`.
-2. With Python 3, Pygattlib handles some numbers incorrectly, this typically occurs when the Nuimo sends rotate or fly events.
-You may see messages such as *UnicodeDecodeError: 'utf-8' codec can't decode byte 0x82 in position 3: invalid start byte*.
 
 To install Pygattlib automatically run the following commands.  The steps are also described below should you wish to follow them manually. 
 ```
@@ -69,7 +67,7 @@ sh examples/test.py py3gattlib # For Python 3.x
 1. `sudo apt-get install pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev`
 
 #### Installing Pygattlib
-1. `git clone https://github.com/matthewelse/pygattlib`
+1. `hg clone https://bitbucket.org/OscarAcena/pygattlib`
 2. `cd pygattlib`
 3. `sudo python setup.py install`  (Installs **gattlib.so** to **/usr/local/lib/python2.7/dist-packages**)
 4. `sudo python3 setup.py install` (Installs **gattlib.cpython-34m.so** and support files to **/usr/local/lib/python3.4/dist-packages/gattlib*.egg**)
