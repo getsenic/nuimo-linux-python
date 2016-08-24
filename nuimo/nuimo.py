@@ -238,14 +238,13 @@ class NuimoController(gattlib.GATTRequester):
 
     # Override GATTRequester superclass
     def on_notification(self, handle, data):
-        received_data = list(map(ord, data))
-        self.debug('on_notification(handle={}, {})'.format(handle, received_data))
+        self.debug('on_notification(handle={}, {})'.format(handle, list(data)))
 
         uuid = self.value_handle_to_uuid(handle)
 
         self.debug('on_notification(handle={}, uuid={})'.format(handle, uuid))
 
-        event = self.event_factory(received_data, uuid)
+        event = self.event_factory(data, uuid)
 
         if event is None:
             raise RuntimeError('Nuimo Controller could not construct event for uuid={}'
