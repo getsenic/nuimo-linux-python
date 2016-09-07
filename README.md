@@ -60,8 +60,8 @@ Pygattlib may not be reliable on your platform.  We are investigating these issu
 
 To install Pygattlib automatically run the following commands.  The steps are also described below should you wish to follow them manually. 
 ```
-sh examples/test.py pygattlib  # For Python 2.x
-sh examples/test.py py3gattlib # For Python 3.x
+sh examples/install.sh pygattlib  # For Python 2.x
+sh examples/install.sh py3gattlib # For Python 3.x
 ```
 #### Install the dependencies
 1. `sudo apt-get install pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev`
