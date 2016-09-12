@@ -42,11 +42,15 @@ class NuimoGestureEvent(NuimoEvent):
     SWIPE_RIGHT = 5
     SWIPE_UP = 6
     SWIPE_DOWN = 7
-    FLY_LEFT = 8
-    FLY_RIGHT = 9
-    FLY_BACKWARDS = 10
-    FLY_TOWARD = 11
-    FLY_UP_DOWN = 12
+    TOUCH_LEFT = 8
+    TOUCH_RIGHT = 9
+    TOUCH_TOP = 10
+    TOUCH_BOTTOM = 11
+    FLY_LEFT = 12
+    FLY_RIGHT = 13
+    FLY_BACKWARDS = 14
+    FLY_TOWARD = 15
+    FLY_UP_DOWN = 16
 
     event_names = {
         1: 'BUTTON_PRESS',
@@ -56,11 +60,15 @@ class NuimoGestureEvent(NuimoEvent):
         5: 'SWIPE_RIGHT',
         6: 'SWIPE_UP',
         7: 'SWIPE_DOWN',
-        8: 'FLY_LEFT',
-        9: 'FLY_RIGHT',
-        10: 'FLY_BACKWARDS',
-        11: 'FLY_TOWARD',
-        12: 'FLY_UP_DOWN'
+        8: 'TOUCH_LEFT',
+        9: 'TOUCH_RIGHT',
+        10: 'TOUCH_TOP',
+        11: 'TOUCH_BOTTOM',
+        12: 'FLY_LEFT',
+        13: 'FLY_RIGHT',
+        14: 'FLY_BACKWARDS',
+        15: 'FLY_TOWARD',
+        16: 'FLY_UP_DOWN'
     }
 
     def __init__(self, gesture, value):
@@ -223,7 +231,9 @@ class NuimoController(gattlib.GATTRequester):
     @staticmethod
     def swipe_event(received_data):
         directions = [NuimoGestureEvent.SWIPE_LEFT, NuimoGestureEvent.SWIPE_RIGHT,
-                      NuimoGestureEvent.SWIPE_UP, NuimoGestureEvent.SWIPE_DOWN]
+                      NuimoGestureEvent.SWIPE_UP, NuimoGestureEvent.SWIPE_DOWN, 
+                      NuimoGestureEvent.TOUCH_LEFT, NuimoGestureEvent.TOUCH_RIGHT,
+                      NuimoGestureEvent.TOUCH_TOP, NuimoGestureEvent.TOUCH_BOTTOM ]
         swipe_direction = received_data[3]
         event_kind = directions[swipe_direction]
         event = NuimoGestureEvent(event_kind, swipe_direction)
