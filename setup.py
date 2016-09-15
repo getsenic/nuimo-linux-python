@@ -8,5 +8,4 @@ setup(name='nuimo',
       maintainer_email='developers@senic.com',
       license='MIT',
       install_requires=['gattlib'],
-      package_dir = {'': 'nuimo'},
       py_modules=['nuimo'])
