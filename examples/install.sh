@@ -61,15 +61,15 @@ case "$cmd" in
 	echo "Installing Nuimo SDK"
 	set -x
 	[ ! -d nuimo-linux-python ] && git clone https://github.com/getsenic/nuimo-linux-python
-	echo "Copy $(pwd)/nuimo-linux-python/nuimo/nuimo.py to your project directory"
+	echo "Copy $(pwd)/nuimo-linux-python/nuimo.py to your project directory"
 	;;
 
     test)
 	echo "Testing Nuimo SDK"
 	sdk="nuimo-linux-python"
 	set -x
-	[ -f $sdk/examples/test.py ] && { sudo PYTHONPATH=$sdk/nuimo python $sdk/examples/test.py; exit 0; }
-	[ -f examples/test.py ] && { sudo PYTHONPATH=./nuimo python examples/test.py; exit 0; }
+	[ -f $sdk/examples/test.py ] && { sudo PYTHONPATH=$sdk python $sdk/examples/test.py; exit 0; }
+	[ -f examples/test.py ] && { sudo PYTHONPATH=. python examples/test.py; exit 0; }
         set +x
 	echo "Please install the Nuimo SDK: sh $0 nuimosdk "
 	;;
