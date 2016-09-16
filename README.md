@@ -73,7 +73,7 @@ sh examples/install.sh py3gattlib # For Python 3.x
 4. `sudo python3 setup.py install` (Installs **gattlib.cpython-34m.so** and support files to **/usr/local/lib/python3.4/dist-packages/gattlib*.egg**)
 
 ### 3. Install Nuimo Python SDK
-1. `cp nuimo/nuimo.py <your project directory> # The Nuimo SDK is a single file`
+1. `cp nuimo.py <your project directory> # The Nuimo SDK is a single file`
 
 ## Usage
 The **Nuimo** SDK is a single Python source file.  It has been tested with Python 2.7 and Python 3.4.
@@ -81,7 +81,7 @@ The **Nuimo** SDK is a single Python source file.  It has been tested with Pytho
 #### Testing
 To test, run the following command (note that it must be run as root because on Linux, Bluetooth discovery is a restricted operation).
 ```
-sudo PYTHONPATH=./nuimo python examples/test.py
+sudo PYTHONPATH=. python examples/test.py
 ```
 #### Usage
 ```python
