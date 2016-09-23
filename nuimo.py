@@ -14,6 +14,7 @@ import logging
 from threading import Event
 from gattlib import GATTRequester, DiscoveryService
 import gattlib
+import struct
 
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.addHandler(logging.NullHandler())
@@ -211,7 +212,7 @@ class NuimoController(gattlib.GATTRequester):
 
     @staticmethod
     def rotation_event(received_data):
-        rotation_value = received_data[3] + (received_data[4] << 8)
+        rotation_value = struct.unpack("<h", received_data[3] + received_data[4])[0]
         if rotation_value >= 1 << 15:
             rotation_value -= 1 << 16
 
