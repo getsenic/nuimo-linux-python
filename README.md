@@ -64,7 +64,7 @@ sh examples/install.sh pygattlib  # For Python 2.x
 sh examples/install.sh py3gattlib # For Python 3.x
 ```
 #### Install the dependencies
-1. `sudo apt-get install pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev`
+1. `sudo apt-get install pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev python-setuptool`
 
 #### Installing Pygattlib
 1. `hg clone https://bitbucket.org/OscarAcena/pygattlib`

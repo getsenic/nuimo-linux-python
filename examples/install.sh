@@ -44,7 +44,7 @@ case "$cmd" in
     pygattlib)
 	echo "Installing Pygattlib and dependencies"
 	set -x
-	sudo apt-get install pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev
+	sudo apt-get install pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev python-setuptools
 	[ ! -d pygattlib ] && git clone https://github.com/matthewelse/pygattlib
 	cd pygattlib && sudo python setup.py install
 	;;
@@ -52,7 +52,7 @@ case "$cmd" in
     py3gattlib)
 	echo "Installing Pygattlib and dependencies for Python 3"
 	set -x
-	sudo apt-get install pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev
+	sudo apt-get install pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python3-dev python3-setuptool
 	[ ! -d pygattlib ] && git clone https://github.com/matthewelse/pygattlib
 	cd pygattlib &&	sudo python3 setup.py install
 	;;
