@@ -234,7 +234,7 @@ class NuimoController(gattlib.GATTRequester):
                       NuimoGestureEvent.SWIPE_UP, NuimoGestureEvent.SWIPE_DOWN, 
                       NuimoGestureEvent.TOUCH_LEFT, NuimoGestureEvent.TOUCH_RIGHT,
                       NuimoGestureEvent.TOUCH_TOP, NuimoGestureEvent.TOUCH_BOTTOM ]
-        swipe_direction = received_data[3]
+        swipe_direction = int(received_data[3].encode('hex'), 16)
         event_kind = directions[swipe_direction]
         event = NuimoGestureEvent(event_kind, swipe_direction)
         return event
