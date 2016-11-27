@@ -225,8 +225,9 @@ class NuimoController(gattlib.GATTRequester):
                       NuimoGestureEvent.FLY_TOWARD, NuimoGestureEvent.FLY_BACKWARDS,
                       NuimoGestureEvent.FLY_UP_DOWN]
         fly_direction = ord(received_data[3])
+        fly_distance = ord(received_data[4])
         event_kind = directions[fly_direction]
-        event = NuimoGestureEvent(event_kind, fly_direction)
+        event = NuimoGestureEvent(event_kind, fly_distance)
         return event
 
     @staticmethod
