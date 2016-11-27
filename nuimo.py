@@ -211,7 +211,7 @@ class NuimoController(gattlib.GATTRequester):
 
     @staticmethod
     def rotation_event(received_data):
-        rotation_value = received_data[3] + (received_data[4] << 8)
+        rotation_value = ord(received_data[3]) + (ord(received_data[4]) << 8)
         if rotation_value >= 1 << 15:
             rotation_value -= 1 << 16
 
@@ -223,7 +223,7 @@ class NuimoController(gattlib.GATTRequester):
         directions = [NuimoGestureEvent.FLY_LEFT, NuimoGestureEvent.FLY_RIGHT,
                       NuimoGestureEvent.FLY_TOWARD, NuimoGestureEvent.FLY_BACKWARDS,
                       NuimoGestureEvent.FLY_UP_DOWN]
-        fly_direction = received_data[3]
+        fly_direction = ord(received_data[3])
         event_kind = directions[fly_direction]
         event = NuimoGestureEvent(event_kind, fly_direction)
         return event
@@ -234,14 +234,14 @@ class NuimoController(gattlib.GATTRequester):
                       NuimoGestureEvent.SWIPE_UP, NuimoGestureEvent.SWIPE_DOWN, 
                       NuimoGestureEvent.TOUCH_LEFT, NuimoGestureEvent.TOUCH_RIGHT,
                       NuimoGestureEvent.TOUCH_TOP, NuimoGestureEvent.TOUCH_BOTTOM ]
-        swipe_direction = received_data[3]
+        swipe_direction = ord(received_data[3])
         event_kind = directions[swipe_direction]
         event = NuimoGestureEvent(event_kind, swipe_direction)
         return event
 
     @staticmethod
     def button_event(received_data):
-        button_direction = received_data[3]
+        button_direction = ord(received_data[3])
         event_kind = NuimoGestureEvent.BUTTON_PRESS if button_direction != 0 else NuimoGestureEvent.BUTTON_RELEASE
         event = NuimoGestureEvent(event_kind, button_direction)
         return event
