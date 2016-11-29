@@ -351,9 +351,8 @@ class NuimoDiscoveryManager(object):
     @staticmethod
     def filter_nuimos(devices):
         return [
-            addr for addr, attrs in
-            devices.items() if attrs and
-            attrs.get('name') == 'Nuimo'
+            addr for addr, attrs in devices.items()
+            if attrs and attrs.get('name') == 'Nuimo'
         ]
 
     def create_nuimos(self, devices):
