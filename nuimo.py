@@ -12,13 +12,14 @@ import functools
 import logging
 
 from threading import Event
-from gattlib import GATTRequester, DiscoveryService
+from gattlib import GATTRequester, DiscoveryService, GATTResponse
 import gattlib
 
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.addHandler(logging.NullHandler())
 _LOGGER.setLevel(logging.INFO)
 
+response = GATTResponse()
 
 class NuimoEvent(object):
     pass
@@ -211,7 +212,7 @@ class NuimoController(gattlib.GATTRequester):
 
     @staticmethod
     def rotation_event(received_data):
-        rotation_value = received_data[3] + (received_data[4] << 8)
+        rotation_value = ord(received_data[3]) + (ord(received_data[4]) << 8)
         if rotation_value >= 1 << 15:
             rotation_value -= 1 << 16
 
@@ -223,9 +224,10 @@ class NuimoController(gattlib.GATTRequester):
         directions = [NuimoGestureEvent.FLY_LEFT, NuimoGestureEvent.FLY_RIGHT,
                       NuimoGestureEvent.FLY_TOWARD, NuimoGestureEvent.FLY_BACKWARDS,
                       NuimoGestureEvent.FLY_UP_DOWN]
-        fly_direction = received_data[3]
+        fly_direction = ord(received_data[3])
+        fly_distance = ord(received_data[4])
         event_kind = directions[fly_direction]
-        event = NuimoGestureEvent(event_kind, fly_direction)
+        event = NuimoGestureEvent(event_kind, fly_distance)
         return event
 
     @staticmethod
@@ -234,14 +236,14 @@ class NuimoController(gattlib.GATTRequester):
                       NuimoGestureEvent.SWIPE_UP, NuimoGestureEvent.SWIPE_DOWN, 
                       NuimoGestureEvent.TOUCH_LEFT, NuimoGestureEvent.TOUCH_RIGHT,
                       NuimoGestureEvent.TOUCH_TOP, NuimoGestureEvent.TOUCH_BOTTOM ]
-        swipe_direction = received_data[3]
+        swipe_direction = ord(received_data[3])
         event_kind = directions[swipe_direction]
         event = NuimoGestureEvent(event_kind, swipe_direction)
         return event
 
     @staticmethod
     def button_event(received_data):
-        button_direction = received_data[3]
+        button_direction = ord(received_data[3])
         event_kind = NuimoGestureEvent.BUTTON_PRESS if button_direction != 0 else NuimoGestureEvent.BUTTON_RELEASE
         event = NuimoGestureEvent(event_kind, button_direction)
         return event
@@ -291,13 +293,20 @@ class NuimoController(gattlib.GATTRequester):
                                .format(uuid))
         return handle
 
-    def write_matrix(self, matrix, timeout, brightness=1.0):
+    def write_matrix(self, matrix, timeout, brightness=1.0, fading=False):
         """Display LEDs on Nuimo"""
 
         matrix = '{:<81}'.format(matrix[:81])
-        matrix_bytes_list = list(map(lambda leds: functools.reduce(
-            lambda acc, led: acc + (1 << led if leds[led] not in [' ', '0'] else 0),
-            range(0, len(leds)), 0), [matrix[i:i + 8] for i in range(0, len(matrix), 8)]))
+        matrix_bytes_list = list(
+            map(lambda leds: functools.reduce(
+                lambda acc, led:
+                    acc + (1 << led if leds[led] not in [' ', '0'] else 0),
+                    range(0, len(leds)), 0
+                ),
+                [matrix[i:i + 8] for i in range(0, len(matrix), 8)])
+        )
+        if fading:
+            matrix_bytes_list[-1] ^= 1 << 4
 
         timeout = max(0, min(255, int(timeout * 10.0)))
         brightness = max(0, min(255, int(255.0 * brightness)))
@@ -307,7 +316,7 @@ class NuimoController(gattlib.GATTRequester):
         led_data = bytearray(matrix_bytes_list)
         led_uuid = self.characteristics_by_name['LED_MATRIX']['uuid']
         led_handle = self.value_handle(led_uuid)
-        self.write_by_handle(led_handle, bytes(led_data))
+        self.write_by_handle_async(led_handle, bytes(led_data), response)
 
     def log(self, msg):
         _LOGGER.info("%s: %s", self.addr, msg)
@@ -341,7 +350,10 @@ class NuimoDiscoveryManager(object):
 
     @staticmethod
     def filter_nuimos(devices):
-        return [addr for addr, attrs in devices.items() if attrs.get('name') == 'Nuimo']
+        return [
+            addr for addr, attrs in devices.items()
+            if attrs and attrs.get('name') == 'Nuimo'
+        ]
 
     def create_nuimos(self, devices):
         return [NuimoController(device) for device in self.filter_nuimos(devices)]
