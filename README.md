@@ -1,5 +1,7 @@
 # Nuimo Python SDK
 
+The **Nuimo** SDK is a single Python source file.  It has been tested with Python 2.7 and Python 3.4.
+
 ## Installation
 These instructions assume a Debian-based Linux.
 
@@ -51,122 +53,43 @@ sh examples/install.sh scan
 ```
 sh examples/install.sh connect
 ```
-### 2. Install Pygattlib
-[Pygattlib](https://bitbucket.org/OscarAcena/pygattlib) is a Python library to use the GATT Protocol for Bluetooth LE devices. It is a wrapper around the implementation used by gatttool in the bluez package. Unlike some other Python Bluetooth libraries, Pygattlib does not need invoke any external programs.
 
-**Known Issues**
-Pygattlib may not be reliable on your platform.  We are investigating these issues at Senic.
-1. The library sometimes appears to get 'stuck', especially when executing `discover_characteristics`.
+### 2. Install Nuimo Python SDK
 
-To install Pygattlib automatically run the following commands.  The steps are also described below should you wish to follow them manually. 
-```
-sh examples/install.sh pygattlib  # For Python 2.x
-sh examples/install.sh py3gattlib # For Python 3.x
-```
-#### Install the dependencies
-1. `sudo apt-get install pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev python-setuptools`
+#### Install the system dependencies
 
-#### Installing Pygattlib
-1. `hg clone https://bitbucket.org/OscarAcena/pygattlib`
-2. `cd pygattlib`
-3. `sudo python setup.py install`  (Installs **gattlib.so** to **/usr/local/lib/python2.7/dist-packages**)
-4. `sudo python3 setup.py install` (Installs **gattlib.cpython-34m.so** and support files to **/usr/local/lib/python3.4/dist-packages/gattlib*.egg**)
+    sudo apt-get install build-essential pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev python-setuptools`
 
-### 3. Install Nuimo Python SDK
-1. `cp nuimo.py <your project directory> # The Nuimo SDK is a single file`
+#### Install Nuimo SDK & it's Python dependencies
 
-## Usage
-The **Nuimo** SDK is a single Python source file.  It has been tested with Python 2.7 and Python 3.4.
+If you're using Python 2.X run:
 
-#### Testing
-To test, run the following command (note that it must be run as root because on Linux, Bluetooth discovery is a restricted operation).
-```
-sudo PYTHONPATH=. python examples/test.py
-```
-#### Usage
-```python
+    sudo python setup.py install
 
-import time
-import sys
-from nuimo import NuimoDiscoveryManager
+If you're using Python 3.X run:
 
+    sudo python3 setup.py install
 
-def main():
-    # Uncomment the next 2 lines to enable detailed logging
-    # import logging
-    # logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+This will install Nuimo SDK package and it's dependency Gattlib (see
+note about Gattlib below) to Python package directory.
 
-    # Discover Nuimo Controllers
-    # Note:
-    #   1) Discovery is a synchronous operation i.e. other Python activity is paused
-    #   2) Discovery must be run as the root user
-    #   3) If the Nuimo MAC address is known, the NuimoController can be instantiated directly.
-    #      For example:
-    #          nuimo = NuimoController('D0:DF:D2:8F:49:B6')
+#### Running the example script
 
-    adapter = 'hci0'  # Typical bluetooth adapter name
-    nuimo_manager = NuimoDiscoveryManager(bluetooth_adapter=adapter, delegate=DiscoveryLogger())
-    nuimo_manager.start_discovery()
-
-    # Were any Nuimos found?
-    if len(nuimo_manager.nuimos) == 0:
-        print('No Nuimos detected')
-        sys.exit(0)
-
-    # Take the first Nuimo found.
-    nuimo = nuimo_manager.nuimos[0]
-
-    # Set up handling of Nuimo events.
-    # In this case just log each incoming event.
-    # NuimoLogger is defined below.
-    nuimo_event_delegate = NuimoLogger()
-    nuimo.set_delegate(nuimo_event_delegate)
-
-    # Attach to the Nuimo.
-    nuimo.connect()
-
-    # Display an icon for 2 seconds
-    interval = 2.0
-    print("Displaying LED Matrix...")
-    nuimo.write_matrix(MATRIX_SHUFFLE, interval)
-
-    # Nuimo events are dispatched in the background
-    time.sleep(100000)
-
-    nuimo.disconnect()
-
-# Example matrix for the Nuimo display
-# Must be 9x9 characters.
-MATRIX_SHUFFLE = (
-    "         " +
-    "         " +
-    " ..   .. " +
-    "   . .   " +
-    "    .    " +
-    "   . .   " +
-    " ..   .. " +
-    "         " +
-    "         ")
-
-
-class DiscoveryLogger:
-    """ Handle Nuimo Discovery callbacks. """
-    def controller_added(self, nuimo):
-        print("added Nuimo: {}".format(nuimo))
-
-
-class NuimoLogger:
-    """ Handle Nuimo Controller event callbacks by printing the events. """
-
-    def received_gesture_event(self, event):
-        print("received event: name={}, gesture_id={}, value={}".format(event.name, event.gesture, event.value))
-
-if __name__ == '__main__':
-    main()
+To test if your setup is working, run the following command (note that it must be run as root because on Linux, Bluetooth discovery is a restricted operation).
 
 ```
+sudo python examples/test.py
+```
+
+You can find the example script here: [examples/test.py](/examples/test.py)
  
 #### Tested on
 1. Raspberry Pi Model 3 - Raspbian Jessie Full (raspberrypi 4.1.18)
 2. Linux Mint 17.3 Rosa
 
+### Note about Pygattlib
+[Pygattlib](https://bitbucket.org/OscarAcena/pygattlib) is a Python library to use the GATT Protocol for Bluetooth LE devices. It is a wrapper around the implementation used by gatttool in the bluez package. Unlike some other Python Bluetooth libraries, Pygattlib does not need invoke any external programs.
+
+**Known Issues**
+Pygattlib may not be reliable on your platform.  We are investigating these issues at Senic.
+1. The library sometimes appears to get 'stuck', especially when executing `discover_characteristics`.
