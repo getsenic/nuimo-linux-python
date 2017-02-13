@@ -2,6 +2,7 @@
 
 import dbus
 import dbus.mainloop.glib
+import functools
 import re
 from enum import Enum
 from gi.repository import GObject
@@ -25,6 +26,21 @@ class GattCharacteristic:
         value = changed_properties.get("Value")
         if value is not None:
             self.service.device.characteristic_value_updated(characteristic=self, value=bytes(value))
+
+    def write_value(self, bytes, offset=0):
+        bytes = [dbus.Byte(b) for b in bytes]
+        self.object.WriteValue(
+            bytes,
+            {"offset": dbus.Byte(offset, variant_level=1)},
+            reply_handler=self.write_value_succeeded,
+            error_handler=self.write_value_failed,
+            dbus_interface="org.bluez.GattCharacteristic1")
+
+    def write_value_succeeded(self):
+        print("write_value_succeeded")
+
+    def write_value_failed(self, error):
+        print("write_value_failed", error)
 
     def enable_notifications(self):
         self.object.StartNotify(
@@ -176,15 +192,15 @@ class NuimoGestureEvent:
 class NuimoLedMatrix:
     def __init__(self, string):
         string = "{:<81}".format(string[:81])
-        print("'" + string + "'")
-
+        self.leds = [c not in [' ', '0'] for c in string]
 
 class NuimoController(GattDevice):
-    NUIMO_SERVICE_UUID           = "f29b1525-cb19-40f3-be5c-7241ecb82fd2"
-    BUTTON_CHARACTERISTIC_UUID   = "f29b1529-cb19-40f3-be5c-7241ecb82fd2"
-    TOUCH_CHARACTERISTIC_UUID    = "f29b1527-cb19-40f3-be5c-7241ecb82fd2"
-    ROTATION_CHARACTERISTIC_UUID = "f29b1528-cb19-40f3-be5c-7241ecb82fd2"
-    FLY_CHARACTERISTIC_UUID      = "f29b1526-cb19-40f3-be5c-7241ecb82fd2"
+    NUIMO_SERVICE_UUID             = "f29b1525-cb19-40f3-be5c-7241ecb82fd2"
+    BUTTON_CHARACTERISTIC_UUID     = "f29b1529-cb19-40f3-be5c-7241ecb82fd2"
+    TOUCH_CHARACTERISTIC_UUID      = "f29b1527-cb19-40f3-be5c-7241ecb82fd2"
+    ROTATION_CHARACTERISTIC_UUID   = "f29b1528-cb19-40f3-be5c-7241ecb82fd2"
+    FLY_CHARACTERISTIC_UUID        = "f29b1526-cb19-40f3-be5c-7241ecb82fd2"
+    LED_MATRIX_CHARACTERISTIC_UUID = "f29b152d-cb19-40f3-be5c-7241ecb82fd2"
 
     def __init__(self, adapter_name, mac_address):
         super().__init__(adapter_name, mac_address)
@@ -215,7 +231,7 @@ class NuimoController(GattDevice):
             for characteristic in service.characteristics:
                 print("   ", characteristic.path, characteristic.uuid)
 
-        nuimo_service = next(service for service in self.services if service.uuid == "f29b1525-cb19-40f3-be5c-7241ecb82fd2")
+        nuimo_service = next(service for service in self.services if service.uuid == self.NUIMO_SERVICE_UUID)
 
         notification_characteristic_uuids = [
             self.BUTTON_CHARACTERISTIC_UUID,
@@ -231,6 +247,26 @@ class NuimoController(GattDevice):
         # TODO: Only fire `connected` when we read the firmware version or battery value as in other SDKs
         if self.listener:
             self.listener.connected()
+
+    def display_matrix(self, matrix, interval=2.0, brightness=1.0, options=0):
+        matrix_bytes = list(map(
+            lambda leds: functools.reduce(lambda acc, led: acc + (1 << led if leds[led] else 0), range(0, len(leds)), 0),
+            [matrix.leds[i:i + 8] for i in range(0, 81, 8)]))
+
+        # TODO: Support `fading` parameter
+        # if fading:
+        #     matrix_bytes_list[10] ^= 1 << 4
+
+        # TODO: Support write requests without response
+        # TODO: Support ignore duplicate matrix writes
+
+        matrix_bytes += [max(0, min(255, int(brightness * 255.0))), max(0, min(255, int(interval * 10.0)))]
+
+        nuimo_service = next((service for service in self.services if service.uuid == self.NUIMO_SERVICE_UUID), None)
+        matrix_characteristic = next((characteristic for characteristic in nuimo_service.characteristics if characteristic.uuid == self.LED_MATRIX_CHARACTERISTIC_UUID), None)
+        # TODO: Fallback to legacy led matrix service (this is needed for older Nuimo firmware were the LED characteristic was a separate service)
+
+        matrix_characteristic.write_value(matrix_bytes)
 
     def characteristic_value_updated(self, characteristic, value):
         {
@@ -331,6 +367,19 @@ class NuimoControllerTestListener(NuimoControllerPrintListener):
         # TODO: Only reconnect if `disconnect` was not called – add an error parameter to this callback
         print("Disconnected, reconnecting...")
         self.controller.connect()
+
+    def received_gesture_event(self, event):
+        super().received_gesture_event(event)
+        self.controller.display_matrix(NuimoLedMatrix(
+            "*        "
+            " *       "
+            "  *      "
+            "   *     "
+            "    *    "
+            "     *   "
+            "      *  "
+            "       * "
+            "        *"))
 
 
 if __name__ == '__main__':
