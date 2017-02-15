@@ -131,11 +131,17 @@ class GattDevice:
             print("Trying to connect again...")
             self.__connect()
 
+        if self.is_services_resolved():
+            self.services_resolved()
+
     def disconnect(self):
         self.object.Disconnect()
 
     def is_connected(self):
         return self.properties.Get("org.bluez.Device1", "Connected") == 1
+
+    def is_services_resolved(self):
+        return self.properties.Get("org.bluez.Device1", "ServicesResolved") == 1
 
     def alias(self):
         return self.properties.Get("org.bluez.Device1", "Alias")
@@ -437,4 +443,3 @@ class NuimoControllerPrintListener(NuimoControllerListener):
 
     def print(self, string):
         print("Nuimo controller " + self.controller.mac_address + " " + string)
-
