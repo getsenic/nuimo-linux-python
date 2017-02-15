@@ -5,16 +5,17 @@ from nuimo_dbus import *
 from gi.repository import GObject
 
 class NuimoControllerTestListener(NuimoControllerPrintListener):
-    def __init__(self, controller):
+    def __init__(self, controller, auto_reconnect=False):
         super().__init__(controller)
+        self.auto_reconnect = auto_reconnect
 
     def disconnected(self):
         super().disconnected()
 
-        # Reconnect as soon as Nuimo was disconnected
-        # TODO: Only reconnect if `disconnect` was not called – add an error parameter to this callback
-        print("Disconnected, reconnecting...")
-        self.controller.connect()
+        if self.auto_reconnect:
+            # Reconnect as soon as Nuimo was disconnected
+            print("Disconnected, reconnecting...")
+            self.controller.connect()
 
     def received_gesture_event(self, event):
         super().received_gesture_event(event)
@@ -45,6 +46,7 @@ if __name__ == '__main__':
     arg_commands_group = arg_parser.add_mutually_exclusive_group(required=True)
     arg_commands_group.add_argument('--discover', action='store_true')
     arg_commands_group.add_argument('--connect', metavar='address', type=str, help='Connect to a Nuimo controller with a given MAC address')
+    arg_commands_group.add_argument('--auto', metavar='address', type=str, help='Connect and automatically reconnect to a Nuimo controller with a given MAC address')
     arg_commands_group.add_argument('--disconnect', metavar='address', type=str, help='Disconnect a Nuimo controller with a given MAC address')
     args = arg_parser.parse_args()
 
@@ -57,12 +59,14 @@ if __name__ == '__main__':
     elif args.connect:
         controller = NuimoController(adapter_name="hci0", mac_address=args.connect)
         controller.listener = NuimoControllerTestListener(controller=controller)
-        print("Connected:", controller.is_connected())
+        controller.connect()
+    elif args.auto:
+        controller = NuimoController(adapter_name="hci0", mac_address=args.auto)
+        controller.listener = NuimoControllerTestListener(controller=controller, auto_reconnect=True)
         controller.connect()
     elif args.disconnect:
         controller = NuimoController(adapter_name="hci0", mac_address=args.disconnect)
         controller.listener = NuimoControllerTestListener(controller=controller)
-        print("Connected:", controller.is_connected())
         controller.disconnect()
 
 
