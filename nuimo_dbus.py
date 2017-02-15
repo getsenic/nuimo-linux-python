@@ -135,7 +135,7 @@ class GattDevice:
         except dbus.exceptions.DBusException as e:
             if (e.get_dbus_name() == "org.bluez.Error.Failed") and (e.get_dbus_message() == "Operation already in progress"):
                 pass
-            elif (self.__connect_retry_attempt <= 5) and (e.get_dbus_name() == "org.bluez.Error.Failed") and (e.get_dbus_message() == "Software caused connection abort"):
+            elif (self.__connect_retry_attempt < 5) and (e.get_dbus_name() == "org.bluez.Error.Failed") and (e.get_dbus_message() == "Software caused connection abort"):
                 self.__connect()
             else:
                 self.connect_failed(e)
