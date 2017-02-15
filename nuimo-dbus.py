@@ -96,7 +96,7 @@ class GattDevice:
         self.adapter = dbus.Interface(adapter_object, "org.bluez.Adapter1")
 
         # TODO: Device needs to be created if it's not yet known to bluetoothd, see "test-device" in bluez-5.43/test/
-        self.device_path = "/org/bluez/" + adapter_name + "/dev_" + mac_address.replace(":", "_")
+        self.device_path = "/org/bluez/" + adapter_name + "/dev_" + mac_address.replace(":", "_").upper()
         device_object = self.bus.get_object("org.bluez", self.device_path)
         self.object = dbus.Interface(device_object, "org.bluez.Device1")
         self.services = []
@@ -138,6 +138,9 @@ class GattDevice:
 
     def is_connected(self):
         return self.properties.Get("org.bluez.Device1", "Connected") == 1
+
+    def alias(self):
+        return self.properties.Get("org.bluez.Device1", "Alias")
 
     def properties_changed(self, sender, changed_properties, invalidated_properties):
         print("Properties changed", sender, changed_properties)
@@ -195,12 +198,27 @@ class NuimoLedMatrix:
         self.leds = [c not in [' ', '0'] for c in string]
 
 class NuimoController(GattDevice):
-    NUIMO_SERVICE_UUID             = "f29b1525-cb19-40f3-be5c-7241ecb82fd2"
-    BUTTON_CHARACTERISTIC_UUID     = "f29b1529-cb19-40f3-be5c-7241ecb82fd2"
-    TOUCH_CHARACTERISTIC_UUID      = "f29b1527-cb19-40f3-be5c-7241ecb82fd2"
-    ROTATION_CHARACTERISTIC_UUID   = "f29b1528-cb19-40f3-be5c-7241ecb82fd2"
-    FLY_CHARACTERISTIC_UUID        = "f29b1526-cb19-40f3-be5c-7241ecb82fd2"
-    LED_MATRIX_CHARACTERISTIC_UUID = "f29b152d-cb19-40f3-be5c-7241ecb82fd2"
+    NUIMO_SERVICE_UUID                    = "f29b1525-cb19-40f3-be5c-7241ecb82fd2"
+    BUTTON_CHARACTERISTIC_UUID            = "f29b1529-cb19-40f3-be5c-7241ecb82fd2"
+    TOUCH_CHARACTERISTIC_UUID             = "f29b1527-cb19-40f3-be5c-7241ecb82fd2"
+    ROTATION_CHARACTERISTIC_UUID          = "f29b1528-cb19-40f3-be5c-7241ecb82fd2"
+    FLY_CHARACTERISTIC_UUID               = "f29b1526-cb19-40f3-be5c-7241ecb82fd2"
+    LED_MATRIX_CHARACTERISTIC_UUID        = "f29b152d-cb19-40f3-be5c-7241ecb82fd2"
+
+    LEGACY_LED_MATRIX_SERVICE             = "f29b1523-cb19-40f3-be5c-7241ecb82fd1"
+    LEGACY_LED_MATRIX_CHARACTERISTIC_UUID = "f29b1524-cb19-40f3-be5c-7241ecb82fd1"
+
+    # TODO: Give services their actual names
+    UNNAMED1_SERVICE_UUID                 = "00001801-0000-1000-8000-00805f9b34fb"
+    UNNAMED2_SERVICE_UUID                 = "0000180a-0000-1000-8000-00805f9b34fb"
+    UNNAMED3_SERVICE_UUID                 = "0000180f-0000-1000-8000-00805f9b34fb"
+
+    SERVICE_UUIDS = [
+        NUIMO_SERVICE_UUID,
+        LEGACY_LED_MATRIX_SERVICE,
+        UNNAMED1_SERVICE_UUID,
+        UNNAMED2_SERVICE_UUID,
+        UNNAMED3_SERVICE_UUID]
 
     def __init__(self, adapter_name, mac_address):
         super().__init__(adapter_name, mac_address)
@@ -333,6 +351,72 @@ class NuimoControllerListener:
         pass
 
 
+class NuimoControllerManagerListener:
+    def controller_discovered(self, controller):
+        pass
+
+
+# TODO: Extract reusable `GattDeviceDiscovery` class
+class NuimoControllerManager:
+    def __init__(self, adapter_name="hci0"):
+        self.listener = None
+        self.bus = dbus.SystemBus()
+        self.object_manager = dbus.Interface(self.bus.get_object("org.bluez", '/'), "org.freedesktop.DBus.ObjectManager")
+
+        # TODO: Get adapter from managed objects? See bluezutils.py
+        adapter_object = self.bus.get_object("org.bluez", "/org/bluez/" + adapter_name)
+        self.adapter = dbus.Interface(adapter_object, "org.bluez.Adapter1")
+
+        self.adapter_name = adapter_name
+        self.device_path_regex = re.compile("^/org/bluez/" + adapter_name + "/dev((_[A-Z0-9]{2}){6})$")
+
+        self.bus.add_signal_receiver(
+            self.interfaces_added,
+            dbus_interface='org.freedesktop.DBus.ObjectManager',
+            signal_name='InterfacesAdded')
+
+        self.bus.add_signal_receiver(
+            self.properties_changed,
+            dbus_interface=dbus.PROPERTIES_IFACE,
+            signal_name='PropertiesChanged',
+            arg0='org.bluez.Device1',
+            path_keyword='path')
+
+    def known_controllers(self):
+        #TODO: Return known devices, see https://github.com/bbirand/python-dbus-gatt/blob/master/discovery.py
+        return []
+
+    def start_discovery(self):
+        # TODO: Support service UUID filter, see http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/adapter-api.txt#n57
+        scan_filter = {}
+        self.adapter.SetDiscoveryFilter({
+            "UUIDs": NuimoController.SERVICE_UUIDS,
+            "Transport": "le"})
+        self.adapter.StartDiscovery()
+
+    def stop_discovery(self):
+        self.adapter.StopDiscovery()
+
+    def interfaces_added(self, path, interfaces):
+        if (not self.listener) or ('org.bluez.Device1' not in interfaces):
+            return
+        match = self.device_path_regex.match(path)
+        if not match:
+            return
+        mac_address = match.group(1)[1:].replace("_", ":").lower()
+        alias = GattDevice(adapter_name=self.adapter_name, mac_address=mac_address).alias()
+        if alias == "Nuimo":
+            self.listener.controller_discovered(NuimoController(adapter_name=self.adapter_name, mac_address=mac_address))
+
+    def properties_changed(self, interface, changed, invalidated, path):
+        # TODO: Update device's reachability as we get updated RSSI values here every now and then
+        # print('properties_changed', interface)
+        # if "org.bluez.Device1" in interface:
+        #     for prop in changed:
+        #         print(interface, path, prop, changed[prop])
+        pass
+
+
 class NuimoControllerPrintListener(NuimoControllerListener):
     def __init__(self, controller):
         self.controller = controller
@@ -382,18 +466,26 @@ class NuimoControllerTestListener(NuimoControllerPrintListener):
             "        *"))
 
 
+class NuimoControllerManagerPrintListener(NuimoControllerManagerListener):
+    def controller_discovered(self, controller):
+        print("Discovered Nuimo controller", controller.mac_address)
+
+
 if __name__ == '__main__':
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
-    controller = NuimoController(adapter_name="hci0", mac_address="FC:52:6E:8E:87:06")
+    #controller = NuimoController(adapter_name="hci0", mac_address="FC:52:6E:8E:87:06")
     #controller = NuimoController(adapter_name="hci0", mac_address="C4:54:31:CD:DD:07")
 
-    controller.listener = NuimoControllerTestListener(controller=controller)
+    #controller.listener = NuimoControllerTestListener(controller=controller)
 
-    print("Connected:", controller.is_connected())
+    #print("Connected:", controller.is_connected())
+    #controller.disconnect()
+    #controller.connect()
 
-    controller.disconnect()
-    controller.connect()
+    controller_manager = NuimoControllerManager(adapter_name="hci0")
+    controller_manager.listener = NuimoControllerManagerPrintListener()
+    controller_manager.start_discovery()
 
     print("Entering main loop. Exit with Ctrl+C")
     mainloop = GObject.MainLoop()
