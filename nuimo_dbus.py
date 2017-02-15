@@ -119,20 +119,24 @@ class GattDevice:
         return
 
     def connect(self):
+        self.__connect_retry_attempt = 0
         self.__connect()
+
+    def connect_failed(self, e):
+        pass
 
     def __connect(self):
         print("__connect...")
+        self.__connect_retry_attempt += 1
         try:
             self.object.Connect()
+            if self.is_services_resolved():
+                self.services_resolved()
         except dbus.exceptions.DBusException as e:
-            # TODO: Only retry on "software" exceptions and only retry for a given number of retries
-            print("Failed to connect:", e)
-            print("Trying to connect again...")
-            self.__connect()
-
-        if self.is_services_resolved():
-            self.services_resolved()
+            if (self.__connect_retry_attempt <= 5) and (e.get_dbus_name() == "org.bluez.Error.Failed") and (e.get_dbus_message() == "Software caused connection abort"):
+                self.__connect()
+            else:
+                self.connect_failed(e)
 
     def disconnect(self):
         self.object.Disconnect()
