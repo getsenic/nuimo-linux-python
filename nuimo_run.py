@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
+import dbus
+import sys
 from argparse import ArgumentParser
 from nuimo_dbus import *
 from gi.repository import GObject
+
+mainloop = GObject.MainLoop()
 
 class NuimoControllerTestListener(NuimoControllerPrintListener):
     def __init__(self, controller, auto_reconnect=False):
@@ -16,6 +20,9 @@ class NuimoControllerTestListener(NuimoControllerPrintListener):
             # Reconnect as soon as Nuimo was disconnected
             print("Disconnected, reconnecting...")
             self.controller.connect()
+        else:
+            mainloop.quit()
+            sys.exit(0)
 
     def received_gesture_event(self, event):
         super().received_gesture_event(event)
@@ -50,6 +57,7 @@ if __name__ == '__main__':
     arg_commands_group.add_argument('--disconnect', metavar='address', type=str, help='Disconnect a Nuimo controller with a given MAC address')
     args = arg_parser.parse_args()
 
+    print("Terminate with Ctrl+C")
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
     if args.discover:
@@ -69,7 +77,4 @@ if __name__ == '__main__':
         controller.listener = NuimoControllerTestListener(controller=controller)
         controller.disconnect()
 
-
-    print("Entering main loop. Exit with Ctrl+C")
-    mainloop = GObject.MainLoop()
     mainloop.run()
