@@ -137,6 +137,14 @@ class GattDevice:
     def disconnect(self):
         self.object.Disconnect()
 
+    def connected(self):
+        """Will be called when `connect()` has finished connecting to the device. Will not be called if the device was already connected."""
+        pass
+
+    def disconnected(self):
+        """Will be called when the device has disconnected"""
+        pass
+
     def is_connected(self):
         return self.properties.Get("org.bluez.Device1", "Connected") == 1
 
@@ -147,7 +155,12 @@ class GattDevice:
         return self.properties.Get("org.bluez.Device1", "Alias")
 
     def properties_changed(self, sender, changed_properties, invalidated_properties):
-        print("Properties changed", sender, changed_properties)
+        if "Connected" in changed_properties:
+            if changed_properties["Connected"]:
+                self.connected()
+            else:
+                self.disconnected()
+
         if "ServicesResolved" in changed_properties and changed_properties["ServicesResolved"] == 1:
             self.services_resolved()
 
@@ -229,13 +242,6 @@ class NuimoController(GattDevice):
         super().__init__(adapter_name, mac_address)
         self.listener = None
 
-    def properties_changed(self, sender, changed_properties, invalidated_properties):
-        super().properties_changed(sender, changed_properties, invalidated_properties)
-
-        connected = changed_properties.get("Connected")
-        if (connected == 0) and self.listener:
-            self.listener.disconnected()
-
     def connect(self):
         if self.listener:
             self.listener.started_connecting()
@@ -245,6 +251,13 @@ class NuimoController(GattDevice):
         if self.listener:
             self.listener.started_disconnecting()
         super().disconnect()
+
+    def connected(self):
+        super().connected()
+
+    def disconnected(self):
+        super().disconnected()
+        self.listener.disconnected()
 
     def services_resolved(self):
         super().services_resolved()
