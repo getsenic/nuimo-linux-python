@@ -137,6 +137,9 @@ class GattDevice:
                 pass
             elif (self.__connect_retry_attempt < 5) and (e.get_dbus_name() == "org.bluez.Error.Failed") and (e.get_dbus_message() == "Software caused connection abort"):
                 self.__connect()
+            elif (e.get_dbus_name() == "org.freedesktop.DBus.Error.NoReply"):
+                # TODO: How to handle properly? Reproducable when we repeatedly shut off Nuimo immediately after its flashing Bluetooth icon appears
+                self.connect_failed(e)
             else:
                 self.connect_failed(e)
 
