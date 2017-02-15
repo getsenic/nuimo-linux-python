@@ -45,6 +45,7 @@ if __name__ == '__main__':
     arg_commands_group = arg_parser.add_mutually_exclusive_group(required=True)
     arg_commands_group.add_argument('--discover', action='store_true')
     arg_commands_group.add_argument('--connect', metavar='address', type=str, help='Connect to a Nuimo controller with a given MAC address')
+    arg_commands_group.add_argument('--disconnect', metavar='address', type=str, help='Disconnect a Nuimo controller with a given MAC address')
     args = arg_parser.parse_args()
 
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
@@ -57,8 +58,13 @@ if __name__ == '__main__':
         controller = NuimoController(adapter_name="hci0", mac_address=args.connect)
         controller.listener = NuimoControllerTestListener(controller=controller)
         print("Connected:", controller.is_connected())
-        controller.disconnect()
         controller.connect()
+    elif args.disconnect:
+        controller = NuimoController(adapter_name="hci0", mac_address=args.disconnect)
+        controller.listener = NuimoControllerTestListener(controller=controller)
+        print("Connected:", controller.is_connected())
+        controller.disconnect()
+
 
     print("Entering main loop. Exit with Ctrl+C")
     mainloop = GObject.MainLoop()
