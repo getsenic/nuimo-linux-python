@@ -13,6 +13,11 @@ class NuimoControllerTestListener(NuimoControllerPrintListener):
         super().__init__(controller)
         self.auto_reconnect = auto_reconnect
 
+    def connect_failed(self, error):
+        super().connect_failed(error)
+        mainloop.quit()
+        sys.exit(0)
+
     def disconnected(self):
         super().disconnected()
 

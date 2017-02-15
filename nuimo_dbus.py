@@ -251,6 +251,10 @@ class NuimoController(GattDevice):
             self.listener.started_connecting()
         super().connect()
 
+    def connect_failed(self, error):
+        if self.listener:
+            self.listener.connect_failed(error)
+
     def disconnect(self):
         if self.listener:
             self.listener.started_disconnecting()
@@ -366,6 +370,9 @@ class NuimoControllerListener:
     def connected(self):
         pass
 
+    def connect_failed(self, error):
+        pass
+
     def started_disconnecting(self):
         pass
 
@@ -448,6 +455,9 @@ class NuimoControllerPrintListener(NuimoControllerListener):
 
     def connected(self):
         self.print("connected")
+
+    def connect_failed(self, error):
+        self.print("connect failed: " + str(error))
 
     def started_disconnecting(self):
         self.print("disconnecting...")
