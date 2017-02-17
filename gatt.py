@@ -1,5 +1,107 @@
 import dbus
+import dbus.mainloop.glib
 import re
+
+from gi.repository import GObject
+
+
+class DeviceManager:
+    def __init__(self, adapter_name):
+        self.listener = None
+        self.adapter_name = adapter_name
+
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        self.mainloop = GObject.MainLoop()
+        self.bus = dbus.SystemBus()
+        adapter_object = self.bus.get_object('org.bluez', '/org/bluez/' + adapter_name)
+        self.adapter = dbus.Interface(adapter_object, 'org.bluez.Adapter1')
+        self.device_path_regex = re.compile('^/org/bluez/' + adapter_name + '/dev((_[A-Z0-9]{2}){6})$')
+
+        self._known_devices = {}
+        self._discovered_devices = {}
+        self._interface_added_signal = None
+        self._properties_changed_signal = None
+
+    def run(self):
+        self._interface_added_signal = self.bus.add_signal_receiver(
+            self._interfaces_added,
+            dbus_interface='org.freedesktop.DBus.ObjectManager',
+            signal_name='InterfacesAdded')
+
+        self._properties_changed_signal = self.bus.add_signal_receiver(
+            self._properties_changed,
+            dbus_interface=dbus.PROPERTIES_IFACE,
+            signal_name='PropertiesChanged',
+            arg0='org.bluez.Device1',
+            path_keyword='path')
+
+        """Starts the main loop that is necessary to receive Bluetooth events from the Bluetooth driver.
+           This call blocks until you call `stop()` to stop the main loop."""
+        self.mainloop.run()
+
+    def stop(self):
+        """Stops the main loop started with `start()`"""
+
+        if self._interface_added_signal is not None:
+            self._interface_added_signal.remove()
+        if self._properties_changed_signal is not None:
+            self._properties_changed_signal.remove()
+
+        self.mainloop.quit()
+
+    def known_devices(self):
+        return self._known_devices()[:]
+
+    def start_discovery(self, service_uuids=[]):
+        filter = {'Transport': 'le'}
+        if len(service_uuids) > 0:  # D-Bus doesn't like empty lists, needs to guess type
+            filter['UUIDs'] = service_uuids
+        self._discovered_devices = {}
+        self.adapter.SetDiscoveryFilter(filter)
+        self.adapter.StartDiscovery()
+
+    def stop_discovery(self):
+        pass
+
+    def _interfaces_added(self, path, interfaces):
+        self._device_discovered(path, interfaces)
+
+    def _properties_changed(self, interface, changed, invalidated, path):
+        # TODO: Handle `changed` and `invalidated` properties and update device
+        self._device_discovered(path, [interface])
+
+    def _device_discovered(self, path, interfaces):
+        if 'org.bluez.Device1' not in interfaces:
+            return
+        match = self.device_path_regex.match(path)
+        if not match:
+            return
+        mac_address = match.group(1)[1:].replace('_', ':').lower()
+
+        # TODO: Get device from self._known_devices
+        device = self._discovered_devices.get(mac_address, None)
+
+        if device is None:
+            device = Device(adapter_name=self.adapter_name, mac_address=mac_address)
+            self._discovered_devices[mac_address] = device
+            if self.listener:
+                self.listener.device_discovered(device)
+        else:
+            device.advertised()
+
+    def create_device(self, mac_address):
+        pass
+
+    def remove_device(self, mac_address):
+        pass
+
+
+class DeviceManagerListener:
+    def device_discovered(self, device):
+        pass
+
+    def device_disappeared(self, device):
+        pass
 
 
 class Device:
@@ -25,7 +127,6 @@ class Device:
 
     def advertised(self):
         """Called when an advertisement package has been received from the device. Requires device discovery to run."""
-        pass
 
     def invalidate(self):
         self.properties_signal_match.remove()

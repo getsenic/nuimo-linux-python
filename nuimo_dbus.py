@@ -1,41 +1,20 @@
-import dbus
-import dbus.mainloop.glib
 import functools
 import gatt
-import re
 from enum import Enum
-from gi.repository import GObject
 
 
-# TODO: Extract reusable `DeviceDiscovery` class
 class ControllerManager:
     def __init__(self, adapter_name='hci0'):
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        self.mainloop = GObject.MainLoop()
         self.listener = None
-        self.bus = dbus.SystemBus()
-        self.object_manager = dbus.Interface(
-            self.bus.get_object('org.bluez', '/'),
-            'org.freedesktop.DBus.ObjectManager')
-
-        # TODO: Get adapter from managed objects? See bluezutils.py
-        adapter_object = self.bus.get_object('org.bluez', '/org/bluez/' + adapter_name)
-        self.adapter = dbus.Interface(adapter_object, 'org.bluez.Adapter1')
-
         self.adapter_name = adapter_name
-        self.device_path_regex = re.compile('^/org/bluez/' + adapter_name + '/dev((_[A-Z0-9]{2}){6})$')
-
-        self._interface_added_signal = None
-        self._properties_changed_signal = None
+        self._device_manager = gatt.DeviceManager(adapter_name=adapter_name)
+        self._device_manager.listener = self
 
     def run(self):
-        """Starts the main loop that is necessary to receive Bluetooth events from the Bluetooth driver.
-           This call blocks until you call `stop()` to stop the main loop."""
-        self.mainloop.run()
+        self._device_manager.run()
 
     def stop(self):
-        """Stops the main loop started with `start()`"""
-        self.mainloop.quit()
+        self._device_manager.stop()
 
     def known_controllers(self):
         # TODO: Return known devices
@@ -43,59 +22,16 @@ class ControllerManager:
         return []
 
     def start_discovery(self):
-        # TODO: Support service UUID filter
-        # see http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/adapter-api.txt#n57
-        self._discovered_controllers = {}
-
-        self._interface_added_signal = self.bus.add_signal_receiver(
-            self._interfaces_added,
-            dbus_interface='org.freedesktop.DBus.ObjectManager',
-            signal_name='InterfacesAdded')
-
-        self._properties_changed_signal = self.bus.add_signal_receiver(
-            self._properties_changed,
-            dbus_interface=dbus.PROPERTIES_IFACE,
-            signal_name='PropertiesChanged',
-            arg0='org.bluez.Device1',
-            path_keyword='path')
-
-        self.adapter.SetDiscoveryFilter({
-            'UUIDs': Controller.SERVICE_UUIDS,
-            'Transport': 'le'})
-        self.adapter.StartDiscovery()
+        self._device_manager.start_discovery()
 
     def stop_discovery(self):
-        if self._interface_added_signal is not None:
-            self._interface_added_signal.remove()
-        if self._properties_changed_signal is not None:
-            self._properties_changed_signal.remove()
-        self.adapter.StopDiscovery()
+        self._device_manager.stop_discovery()
 
-    def _interfaces_added(self, path, interfaces):
-        self._device_discovered(path, interfaces)
-
-    def _properties_changed(self, interface, changed, invalidated, path):
-        # TODO: Handle `changed` and `invalidated` properties and update device
-        self._device_discovered(path, [interface])
-
-    def _device_discovered(self, path, interfaces):
-        if 'org.bluez.Device1' not in interfaces:
+    def device_discovered(self, device):
+        if (self.listener is None) or (device.alias() != 'Nuimo'):
             return
-        match = self.device_path_regex.match(path)
-        if not match:
-            return
-        mac_address = match.group(1)[1:].replace('_', ':').lower()
-        alias = gatt.Device(adapter_name=self.adapter_name, mac_address=mac_address).alias()
-        if alias != 'Nuimo':
-            return
-        controller = Controller(adapter_name=self.adapter_name, mac_address=mac_address)
-        discovered_controller = self._discovered_controllers.get(controller.mac_address, None)
-        if discovered_controller is None:
-            self._discovered_controllers[mac_address] = controller
-            if self.listener is not None:
-                self.listener.controller_discovered(controller)
-        else:
-            discovered_controller.advertised()
+        controller = Controller(adapter_name=self.adapter_name, mac_address=device.mac_address)
+        self.listener.controller_discovered(controller)
 
 
 class ControllerManagerListener:
