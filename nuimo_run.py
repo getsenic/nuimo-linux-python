@@ -48,13 +48,31 @@ class NuimoControllerManagerPrintListener(nuimo.ControllerManagerListener):
 
 
 if __name__ == '__main__':
-    arg_parser = ArgumentParser(description='Nuimo Controller Demo')
-    arg_parser.add_argument('--adapter', default='hci0', help='Name of Bluetooth adapter, defaults to "hci0"')
+    arg_parser = ArgumentParser(description="Nuimo Controller Demo")
+    arg_parser.add_argument(
+        '--adapter',
+        default='hci0',
+        help="Name of Bluetooth adapter, defaults to 'hci0'")
     arg_commands_group = arg_parser.add_mutually_exclusive_group(required=True)
-    arg_commands_group.add_argument('--discover', action='store_true', help='Lists all nearby Nuimo controllers')
-    arg_commands_group.add_argument('--connect', metavar='address', type=str, help='Connect to a Nuimo controller with a given MAC address')
-    arg_commands_group.add_argument('--auto', metavar='address', type=str, help='Connect and automatically reconnect to a Nuimo controller with a given MAC address')
-    arg_commands_group.add_argument('--disconnect', metavar='address', type=str, help='Disconnect a Nuimo controller with a given MAC address')
+    arg_commands_group.add_argument(
+        '--discover',
+        action='store_true',
+        help="Lists all nearby Nuimo controllers")
+    arg_commands_group.add_argument(
+        '--connect',
+        metavar='address',
+        type=str,
+        help="Connect to a Nuimo controller with a given MAC address")
+    arg_commands_group.add_argument(
+        '--auto',
+        metavar='address',
+        type=str,
+        help="Connect and automatically reconnect to a Nuimo controller with a given MAC address")
+    arg_commands_group.add_argument(
+        '--disconnect',
+        metavar='address',
+        type=str,
+        help="Disconnect a Nuimo controller with a given MAC address")
     args = arg_parser.parse_args()
 
     print("Terminate with Ctrl+C")

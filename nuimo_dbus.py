@@ -13,15 +13,15 @@ class GattCharacteristic:
         self.uuid = uuid
         self.bus = service.bus
         self.object_manager = service.object_manager
-        self.object = self.bus.get_object("org.bluez", path)
+        self.object = self.bus.get_object('org.bluez', path)
         self.properties = dbus.Interface(self.object, "org.freedesktop.DBus.Properties")
-        self.properties_signal = self.properties.connect_to_signal("PropertiesChanged", self.properties_changed)
+        self.properties_signal = self.properties.connect_to_signal('PropertiesChanged', self.properties_changed)
 
     def invalidate(self):
         self.properties_signal.remove()
 
     def properties_changed(self, properties, changed_properties, invalidated_properties):
-        value = changed_properties.get("Value")
+        value = changed_properties.get('Value')
         if value is not None:
             self.service.device.characteristic_value_updated(characteristic=self, value=bytes(value))
 
@@ -29,28 +29,28 @@ class GattCharacteristic:
         bytes = [dbus.Byte(b) for b in bytes]
         self.object.WriteValue(
             bytes,
-            {"offset": dbus.Byte(offset, variant_level=1)},
+            {'offset': dbus.Byte(offset, variant_level=1)},
             reply_handler=self.write_value_succeeded,
             error_handler=self.write_value_failed,
-            dbus_interface="org.bluez.GattCharacteristic1")
+            dbus_interface='org.bluez.GattCharacteristic1')
 
     def write_value_succeeded(self):
-        print("write_value_succeeded")
+        print('write_value_succeeded')
 
     def write_value_failed(self, error):
-        print("write_value_failed", error)
+        print('write_value_failed', error)
 
     def enable_notifications(self):
         self.object.StartNotify(
             reply_handler=self.enable_notifications_succeeded,
             error_handler=self.enable_notifications_failed,
-            dbus_interface="org.bluez.GattCharacteristic1")
+            dbus_interface='org.bluez.GattCharacteristic1')
 
     def enable_notifications_succeeded(self):
-        print("notification_enabling_succeeded")
+        print('notification_enabling_succeeded')
 
     def enable_notifications_failed(self, error):
-        print("notification_enabling_failed", error)
+        print('notification_enabling_failed', error)
 
 
 class GattService:
@@ -60,7 +60,7 @@ class GattService:
         self.uuid = uuid
         self.bus = device.bus
         self.object_manager = device.object_manager
-        self.object = self.bus.get_object("org.bluez", path)
+        self.object = self.bus.get_object('org.bluez', path)
         self.characteristics = []
         self.characteristics_resolved()
 
@@ -74,14 +74,14 @@ class GattService:
     def characteristics_resolved(self):
         self.invalidate_characteristics()
 
-        characteristics_regex = re.compile(self.path + "/char[0-9abcdef]{4}$")
+        characteristics_regex = re.compile(self.path + '/char[0-9abcdef]{4}$')
         managed_characteristics = [
             char for char in self.object_manager.GetManagedObjects().items()
             if characteristics_regex.match(char[0])]
         self.characteristics = [GattCharacteristic(
             service=self,
             path=c[0],
-            uuid=c[1]["org.bluez.GattCharacteristic1"]["UUID"]) for c in managed_characteristics]
+            uuid=c[1]['org.bluez.GattCharacteristic1']['UUID']) for c in managed_characteristics]
 
 
 class GattDevice:
@@ -89,21 +89,21 @@ class GattDevice:
         self.mac_address = mac_address
         self.bus = dbus.SystemBus()
         self.object_manager = dbus.Interface(
-            self.bus.get_object("org.bluez", '/'),
-            "org.freedesktop.DBus.ObjectManager")
+            self.bus.get_object('org.bluez', '/'),
+            'org.freedesktop.DBus.ObjectManager')
 
         # TODO: Get adapter from managed objects? See bluezutils.py
-        adapter_object = self.bus.get_object("org.bluez", "/org/bluez/" + adapter_name)
-        self.adapter = dbus.Interface(adapter_object, "org.bluez.Adapter1")
+        adapter_object = self.bus.get_object('org.bluez', '/org/bluez/' + adapter_name)
+        self.adapter = dbus.Interface(adapter_object, 'org.bluez.Adapter1')
 
         # TODO: Device needs to be created if it's not yet known to bluetoothd, see "test-device" in bluez-5.43/test/
-        self.device_path = "/org/bluez/" + adapter_name + "/dev_" + mac_address.replace(":", "_").upper()
-        device_object = self.bus.get_object("org.bluez", self.device_path)
-        self.object = dbus.Interface(device_object, "org.bluez.Device1")
+        self.device_path = '/org/bluez/' + adapter_name + '/dev_' + mac_address.replace(':', '_').upper()
+        device_object = self.bus.get_object('org.bluez', self.device_path)
+        self.object = dbus.Interface(device_object, 'org.bluez.Device1')
         self.services = []
 
-        self.properties = dbus.Interface(self.object, "org.freedesktop.DBus.Properties")
-        self.properties_signal_match = self.properties.connect_to_signal("PropertiesChanged", self.properties_changed)
+        self.properties = dbus.Interface(self.object, 'org.freedesktop.DBus.Properties')
+        self.properties_signal_match = self.properties.connect_to_signal('PropertiesChanged', self.properties_changed)
 
     def advertised(self):
         """Called when an advertisement package has been received from the device. Requires device discovery to run."""
@@ -139,16 +139,16 @@ class GattDevice:
             if self.is_services_resolved():
                 self.services_resolved()
         except dbus.exceptions.DBusException as e:
-            if (e.get_dbus_name() == "org.freedesktop.DBus.Error.UnknownObject"):
+            if (e.get_dbus_name() == 'org.freedesktop.DBus.Error.UnknownObject'):
                 self.connect_failed(Exception("Nuimo Controller does not exist, check adapter name and MAC address."))
-            elif ((e.get_dbus_name() == "org.bluez.Error.Failed") and
+            elif ((e.get_dbus_name() == 'org.bluez.Error.Failed') and
                   (e.get_dbus_message() == "Operation already in progress")):
                 pass
             elif ((self.__connect_retry_attempt < 5) and
-                  (e.get_dbus_name() == "org.bluez.Error.Failed") and
+                  (e.get_dbus_name() == 'org.bluez.Error.Failed') and
                   (e.get_dbus_message() == "Software caused connection abort")):
                 self.__connect()
-            elif (e.get_dbus_name() == "org.freedesktop.DBus.Error.NoReply"):
+            elif (e.get_dbus_name() == 'org.freedesktop.DBus.Error.NoReply'):
                 # TODO: How to handle properly?
                 # Reproducable when we repeatedly shut off Nuimo immediately after its flashing Bluetooth icon appears
                 self.connect_failed(e)
@@ -168,35 +168,35 @@ class GattDevice:
         pass
 
     def is_connected(self):
-        return self.properties.Get("org.bluez.Device1", "Connected") == 1
+        return self.properties.Get('org.bluez.Device1', 'Connected') == 1
 
     def is_services_resolved(self):
-        return self.properties.Get("org.bluez.Device1", "ServicesResolved") == 1
+        return self.properties.Get('org.bluez.Device1', 'ServicesResolved') == 1
 
     def alias(self):
-        return self.properties.Get("org.bluez.Device1", "Alias")
+        return self.properties.Get('org.bluez.Device1', 'Alias')
 
     def properties_changed(self, sender, changed_properties, invalidated_properties):
-        if "Connected" in changed_properties:
-            if changed_properties["Connected"]:
+        if 'Connected' in changed_properties:
+            if changed_properties['Connected']:
                 self.connected()
             else:
                 self.disconnected()
 
-        if "ServicesResolved" in changed_properties and changed_properties["ServicesResolved"] == 1:
+        if 'ServicesResolved' in changed_properties and changed_properties['ServicesResolved'] == 1:
             self.services_resolved()
 
     def services_resolved(self):
         self.invalidate_services()
 
-        services_regex = re.compile(self.device_path + "/service[0-9abcdef]{4}$")
+        services_regex = re.compile(self.device_path + '/service[0-9abcdef]{4}$')
         managed_services = [
             service for service in self.object_manager.GetManagedObjects().items()
             if services_regex.match(service[0])]
         self.services = [GattService(
             device=self,
             path=service[0],
-            uuid=service[1]["org.bluez.GattService1"]["UUID"]) for service in managed_services]
+            uuid=service[1]['org.bluez.GattService1']['UUID']) for service in managed_services]
 
     def characteristic_value_updated(self, characteristic, value):
         # To be implemented by subclass
@@ -235,25 +235,25 @@ class GestureEvent:
 
 class LedMatrix:
     def __init__(self, string):
-        string = "{:<81}".format(string[:81])
+        string = '{:<81}'.format(string[:81])
         self.leds = [c not in [' ', '0'] for c in string]
 
 
 class Controller(GattDevice):
-    NUIMO_SERVICE_UUID                    = "f29b1525-cb19-40f3-be5c-7241ecb82fd2"
-    BUTTON_CHARACTERISTIC_UUID            = "f29b1529-cb19-40f3-be5c-7241ecb82fd2"
-    TOUCH_CHARACTERISTIC_UUID             = "f29b1527-cb19-40f3-be5c-7241ecb82fd2"
-    ROTATION_CHARACTERISTIC_UUID          = "f29b1528-cb19-40f3-be5c-7241ecb82fd2"
-    FLY_CHARACTERISTIC_UUID               = "f29b1526-cb19-40f3-be5c-7241ecb82fd2"
-    LED_MATRIX_CHARACTERISTIC_UUID        = "f29b152d-cb19-40f3-be5c-7241ecb82fd2"
+    NUIMO_SERVICE_UUID                    = 'f29b1525-cb19-40f3-be5c-7241ecb82fd2'
+    BUTTON_CHARACTERISTIC_UUID            = 'f29b1529-cb19-40f3-be5c-7241ecb82fd2'
+    TOUCH_CHARACTERISTIC_UUID             = 'f29b1527-cb19-40f3-be5c-7241ecb82fd2'
+    ROTATION_CHARACTERISTIC_UUID          = 'f29b1528-cb19-40f3-be5c-7241ecb82fd2'
+    FLY_CHARACTERISTIC_UUID               = 'f29b1526-cb19-40f3-be5c-7241ecb82fd2'
+    LED_MATRIX_CHARACTERISTIC_UUID        = 'f29b152d-cb19-40f3-be5c-7241ecb82fd2'
 
-    LEGACY_LED_MATRIX_SERVICE             = "f29b1523-cb19-40f3-be5c-7241ecb82fd1"
-    LEGACY_LED_MATRIX_CHARACTERISTIC_UUID = "f29b1524-cb19-40f3-be5c-7241ecb82fd1"
+    LEGACY_LED_MATRIX_SERVICE             = 'f29b1523-cb19-40f3-be5c-7241ecb82fd1'
+    LEGACY_LED_MATRIX_CHARACTERISTIC_UUID = 'f29b1524-cb19-40f3-be5c-7241ecb82fd1'
 
     # TODO: Give services their actual names
-    UNNAMED1_SERVICE_UUID                 = "00001801-0000-1000-8000-00805f9b34fb"
-    UNNAMED2_SERVICE_UUID                 = "0000180a-0000-1000-8000-00805f9b34fb"
-    UNNAMED3_SERVICE_UUID                 = "0000180f-0000-1000-8000-00805f9b34fb"
+    UNNAMED1_SERVICE_UUID                 = '00001801-0000-1000-8000-00805f9b34fb'
+    UNNAMED2_SERVICE_UUID                 = '0000180a-0000-1000-8000-00805f9b34fb'
+    UNNAMED3_SERVICE_UUID                 = '0000180f-0000-1000-8000-00805f9b34fb'
 
     SERVICE_UUIDS = [
         NUIMO_SERVICE_UUID,
@@ -413,21 +413,21 @@ class ControllerManagerListener:
 
 # TODO: Extract reusable `GattDeviceDiscovery` class
 class ControllerManager:
-    def __init__(self, adapter_name="hci0"):
+    def __init__(self, adapter_name='hci0'):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         self.mainloop = GObject.MainLoop()
         self.listener = None
         self.bus = dbus.SystemBus()
         self.object_manager = dbus.Interface(
-            self.bus.get_object("org.bluez", '/'),
-            "org.freedesktop.DBus.ObjectManager")
+            self.bus.get_object('org.bluez', '/'),
+            'org.freedesktop.DBus.ObjectManager')
 
         # TODO: Get adapter from managed objects? See bluezutils.py
-        adapter_object = self.bus.get_object("org.bluez", "/org/bluez/" + adapter_name)
-        self.adapter = dbus.Interface(adapter_object, "org.bluez.Adapter1")
+        adapter_object = self.bus.get_object('org.bluez', '/org/bluez/' + adapter_name)
+        self.adapter = dbus.Interface(adapter_object, 'org.bluez.Adapter1')
 
         self.adapter_name = adapter_name
-        self.device_path_regex = re.compile("^/org/bluez/" + adapter_name + "/dev((_[A-Z0-9]{2}){6})$")
+        self.device_path_regex = re.compile('^/org/bluez/' + adapter_name + '/dev((_[A-Z0-9]{2}){6})$')
 
         self.__interface_added_signal = None
         self.__properties_changed_signal = None
@@ -464,8 +464,8 @@ class ControllerManager:
             path_keyword='path')
 
         self.adapter.SetDiscoveryFilter({
-            "UUIDs": Controller.SERVICE_UUIDS,
-            "Transport": "le"})
+            'UUIDs': Controller.SERVICE_UUIDS,
+            'Transport': 'le'})
         self.adapter.StartDiscovery()
 
     def stop_discovery(self):
@@ -483,14 +483,14 @@ class ControllerManager:
         self.__device_discovered(path, [interface])
 
     def __device_discovered(self, path, interfaces):
-        if "org.bluez.Device1" not in interfaces:
+        if 'org.bluez.Device1' not in interfaces:
             return
         match = self.device_path_regex.match(path)
         if not match:
             return
-        mac_address = match.group(1)[1:].replace("_", ":").lower()
+        mac_address = match.group(1)[1:].replace('_', ':').lower()
         alias = GattDevice(adapter_name=self.adapter_name, mac_address=mac_address).alias()
-        if alias != "Nuimo":
+        if alias != 'Nuimo':
             return
         controller = Controller(adapter_name=self.adapter_name, mac_address=mac_address)
         discovered_controller = self.__discovered_controllers.get(controller.mac_address, None)
