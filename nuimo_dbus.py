@@ -126,14 +126,14 @@ class GattDevice:
         return
 
     def connect(self):
-        self.__connect_retry_attempt = 0
-        self.__connect()
+        self._connect_retry_attempt = 0
+        self._connect()
 
     def connect_failed(self, e):
         pass
 
-    def __connect(self):
-        self.__connect_retry_attempt += 1
+    def _connect(self):
+        self._connect_retry_attempt += 1
         try:
             self.object.Connect()
             if self.is_services_resolved():
@@ -144,10 +144,10 @@ class GattDevice:
             elif ((e.get_dbus_name() == 'org.bluez.Error.Failed') and
                   (e.get_dbus_message() == "Operation already in progress")):
                 pass
-            elif ((self.__connect_retry_attempt < 5) and
+            elif ((self._connect_retry_attempt < 5) and
                   (e.get_dbus_name() == 'org.bluez.Error.Failed') and
                   (e.get_dbus_message() == "Software caused connection abort")):
-                self.__connect()
+                self._connect()
             elif (e.get_dbus_name() == 'org.freedesktop.DBus.Error.NoReply'):
                 # TODO: How to handle properly?
                 # Reproducable when we repeatedly shut off Nuimo immediately after its flashing Bluetooth icon appears
@@ -429,8 +429,8 @@ class ControllerManager:
         self.adapter_name = adapter_name
         self.device_path_regex = re.compile('^/org/bluez/' + adapter_name + '/dev((_[A-Z0-9]{2}){6})$')
 
-        self.__interface_added_signal = None
-        self.__properties_changed_signal = None
+        self._interface_added_signal = None
+        self._properties_changed_signal = None
 
     def run(self):
         """Starts the main loop that is necessary to receive Bluetooth events from the Bluetooth driver.
@@ -449,15 +449,15 @@ class ControllerManager:
     def start_discovery(self):
         # TODO: Support service UUID filter
         # see http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/adapter-api.txt#n57
-        self.__discovered_controllers = {}
+        self._discovered_controllers = {}
 
-        self.__interface_added_signal = self.bus.add_signal_receiver(
-            self.__interfaces_added,
+        self._interface_added_signal = self.bus.add_signal_receiver(
+            self._interfaces_added,
             dbus_interface='org.freedesktop.DBus.ObjectManager',
             signal_name='InterfacesAdded')
 
-        self.__properties_changed_signal = self.bus.add_signal_receiver(
-            self.__properties_changed,
+        self._properties_changed_signal = self.bus.add_signal_receiver(
+            self._properties_changed,
             dbus_interface=dbus.PROPERTIES_IFACE,
             signal_name='PropertiesChanged',
             arg0='org.bluez.Device1',
@@ -469,20 +469,20 @@ class ControllerManager:
         self.adapter.StartDiscovery()
 
     def stop_discovery(self):
-        if self.__interface_added_signal is not None:
-            self.__interface_added_signal.remove()
-        if self.__properties_changed_signal is not None:
-            self.__properties_changed_signal.remove()
+        if self._interface_added_signal is not None:
+            self._interface_added_signal.remove()
+        if self._properties_changed_signal is not None:
+            self._properties_changed_signal.remove()
         self.adapter.StopDiscovery()
 
-    def __interfaces_added(self, path, interfaces):
-        self.__device_discovered(path, interfaces)
+    def _interfaces_added(self, path, interfaces):
+        self._device_discovered(path, interfaces)
 
-    def __properties_changed(self, interface, changed, invalidated, path):
+    def _properties_changed(self, interface, changed, invalidated, path):
         # TODO: Handle `changed` and `invalidated` properties and update device
-        self.__device_discovered(path, [interface])
+        self._device_discovered(path, [interface])
 
-    def __device_discovered(self, path, interfaces):
+    def _device_discovered(self, path, interfaces):
         if 'org.bluez.Device1' not in interfaces:
             return
         match = self.device_path_regex.match(path)
@@ -493,9 +493,9 @@ class ControllerManager:
         if alias != 'Nuimo':
             return
         controller = Controller(adapter_name=self.adapter_name, mac_address=mac_address)
-        discovered_controller = self.__discovered_controllers.get(controller.mac_address, None)
+        discovered_controller = self._discovered_controllers.get(controller.mac_address, None)
         if discovered_controller is None:
-            self.__discovered_controllers[mac_address] = controller
+            self._discovered_controllers[mac_address] = controller
             if self.listener is not None:
                 self.listener.controller_discovered(controller)
         else:
