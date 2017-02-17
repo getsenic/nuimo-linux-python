@@ -4,9 +4,8 @@ import dbus
 import sys
 from argparse import ArgumentParser
 from nuimo_dbus import *
-from gi.repository import GObject
 
-mainloop = GObject.MainLoop()
+controller_manager = None
 
 class NuimoControllerTestListener(NuimoControllerPrintListener):
     def __init__(self, controller, auto_reconnect=False):
@@ -15,7 +14,7 @@ class NuimoControllerTestListener(NuimoControllerPrintListener):
 
     def connect_failed(self, error):
         super().connect_failed(error)
-        mainloop.quit()
+        controller_manager.stop()
         sys.exit(0)
 
     def disconnected(self):
@@ -26,7 +25,7 @@ class NuimoControllerTestListener(NuimoControllerPrintListener):
             print("Disconnected, reconnecting...")
             self.controller.connect()
         else:
-            mainloop.quit()
+            controller_manager.stop()
             sys.exit(0)
 
     def received_gesture_event(self, event):
@@ -63,10 +62,10 @@ if __name__ == '__main__':
     args = arg_parser.parse_args()
 
     print("Terminate with Ctrl+C")
-    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+
+    controller_manager = NuimoControllerManager(adapter_name="hci0")
 
     if args.discover:
-        controller_manager = NuimoControllerManager(adapter_name="hci0")
         controller_manager.listener = NuimoControllerManagerPrintListener()
         controller_manager.start_discovery()
     elif args.connect:
@@ -82,4 +81,4 @@ if __name__ == '__main__':
         controller.listener = NuimoControllerTestListener(controller=controller)
         controller.disconnect()
 
-    mainloop.run()
+    controller_manager.run()

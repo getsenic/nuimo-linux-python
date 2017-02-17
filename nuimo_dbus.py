@@ -393,6 +393,8 @@ class NuimoControllerManagerListener:
 # TODO: Extract reusable `GattDeviceDiscovery` class
 class NuimoControllerManager:
     def __init__(self, adapter_name="hci0"):
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        self.mainloop = GObject.MainLoop()
         self.listener = None
         self.bus = dbus.SystemBus()
         self.object_manager = dbus.Interface(self.bus.get_object("org.bluez", '/'), "org.freedesktop.DBus.ObjectManager")
@@ -415,6 +417,14 @@ class NuimoControllerManager:
             signal_name='PropertiesChanged',
             arg0='org.bluez.Device1',
             path_keyword='path')
+
+    def run(self):
+        """Starts the main loop that is necessary to receive Bluetooth events from the Bluetooth driver. This is blocking command that blocks until you call `stop()` to stop the main loop."""
+        self.mainloop.run()
+
+    def stop(self):
+        """Stops the main loop started with `start()`"""
+        self.mainloop.quit()
 
     def known_controllers(self):
         #TODO: Return known devices, see https://github.com/bbirand/python-dbus-gatt/blob/master/discovery.py
