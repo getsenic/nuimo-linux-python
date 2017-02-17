@@ -429,17 +429,8 @@ class ControllerManager:
         self.adapter_name = adapter_name
         self.device_path_regex = re.compile("^/org/bluez/" + adapter_name + "/dev((_[A-Z0-9]{2}){6})$")
 
-        self.bus.add_signal_receiver(
-            self.interfaces_added,
-            dbus_interface='org.freedesktop.DBus.ObjectManager',
-            signal_name='InterfacesAdded')
-
-        self.bus.add_signal_receiver(
-            self.properties_changed,
-            dbus_interface=dbus.PROPERTIES_IFACE,
-            signal_name='PropertiesChanged',
-            arg0='org.bluez.Device1',
-            path_keyword='path')
+        self.__interface_added_signal = None
+        self.__properties_changed_signal = None
 
     def run(self):
         """Starts the main loop that is necessary to receive Bluetooth events from the Bluetooth driver.
@@ -459,18 +450,35 @@ class ControllerManager:
         # TODO: Support service UUID filter
         # see http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/adapter-api.txt#n57
         self.__discovered_controllers = {}
+
+        self.__interface_added_signal = self.bus.add_signal_receiver(
+            self.__interfaces_added,
+            dbus_interface='org.freedesktop.DBus.ObjectManager',
+            signal_name='InterfacesAdded')
+
+        self.__properties_changed_signal = self.bus.add_signal_receiver(
+            self.__properties_changed,
+            dbus_interface=dbus.PROPERTIES_IFACE,
+            signal_name='PropertiesChanged',
+            arg0='org.bluez.Device1',
+            path_keyword='path')
+
         self.adapter.SetDiscoveryFilter({
             "UUIDs": Controller.SERVICE_UUIDS,
             "Transport": "le"})
         self.adapter.StartDiscovery()
 
     def stop_discovery(self):
+        if self.__interface_added_signal is not None:
+            self.__interface_added_signal.remove()
+        if self.__properties_changed_signal is not None:
+            self.__properties_changed_signal.remove()
         self.adapter.StopDiscovery()
 
-    def interfaces_added(self, path, interfaces):
+    def __interfaces_added(self, path, interfaces):
         self.__device_discovered(path, interfaces)
 
-    def properties_changed(self, interface, changed, invalidated, path):
+    def __properties_changed(self, interface, changed, invalidated, path):
         # TODO: Handle `changed` and `invalidated` properties and update device
         self.__device_discovered(path, [interface])
 
