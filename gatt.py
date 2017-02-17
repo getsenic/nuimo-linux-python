@@ -17,16 +17,31 @@ class DeviceManager:
         self.adapter = dbus.Interface(adapter_object, 'org.bluez.Adapter1')
         self.device_path_regex = re.compile('^/org/bluez/' + adapter_name + '/dev((_[A-Z0-9]{2}){6})$')
 
-        self._known_devices = {}
+        self._devices = {}
         self._discovered_devices = {}
         self._interface_added_signal = None
         self._properties_changed_signal = None
 
     def run(self):
+        """Starts the main loop that is necessary to receive Bluetooth events from the Bluetooth adapter.
+           This call blocks until you call `stop()` to stop the main loop."""
+
+        object_manager = dbus.Interface(self.bus.get_object("org.bluez", "/"), "org.freedesktop.DBus.ObjectManager")
+        mac_addresses = list(filter(None.__ne__, [
+            self._mac_address(path)
+            for path, _ in object_manager.GetManagedObjects().items()
+        ]))
+        for mac_address in mac_addresses:
+            if self._devices.get(mac_address, None) is not None:
+                continue
+            self._devices[mac_address] = Device(adapter_name=self.adapter_name, mac_address=mac_address)
+
         self._interface_added_signal = self.bus.add_signal_receiver(
             self._interfaces_added,
             dbus_interface='org.freedesktop.DBus.ObjectManager',
             signal_name='InterfacesAdded')
+
+        # TODO: Also listen to 'interfaces removed' events?
 
         self._properties_changed_signal = self.bus.add_signal_receiver(
             self._properties_changed,
@@ -35,8 +50,6 @@ class DeviceManager:
             arg0='org.bluez.Device1',
             path_keyword='path')
 
-        """Starts the main loop that is necessary to receive Bluetooth events from the Bluetooth driver.
-           This call blocks until you call `stop()` to stop the main loop."""
         self.mainloop.run()
 
     def stop(self):
@@ -49,8 +62,8 @@ class DeviceManager:
 
         self.mainloop.quit()
 
-    def known_devices(self):
-        return self._known_devices()[:]
+    def devices(self):
+        return self._devices()[:]
 
     def start_discovery(self, service_uuids=[]):
         filter = {'Transport': 'le'}
@@ -73,21 +86,27 @@ class DeviceManager:
     def _device_discovered(self, path, interfaces):
         if 'org.bluez.Device1' not in interfaces:
             return
-        match = self.device_path_regex.match(path)
-        if not match:
+        mac_address = self._mac_address(path)
+        if not mac_address:
             return
-        mac_address = match.group(1)[1:].replace('_', ':').lower()
-
-        # TODO: Get device from self._known_devices
-        device = self._discovered_devices.get(mac_address, None)
-
+        device = self._devices.get(mac_address, None)
         if device is None:
+            # Should not happen as we listen to "interfaces added" events, but be robust
             device = Device(adapter_name=self.adapter_name, mac_address=mac_address)
+            self._devices[mac_address] = device
+
+        if self._discovered_devices.get(mac_address, None) is None:
             self._discovered_devices[mac_address] = device
             if self.listener:
                 self.listener.device_discovered(device)
         else:
             device.advertised()
+
+    def _mac_address(self, device_path):
+        match = self.device_path_regex.match(device_path)
+        if not match:
+            return None
+        return match.group(1)[1:].replace('_', ':').lower()
 
     def create_device(self, mac_address):
         pass

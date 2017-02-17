@@ -16,10 +16,9 @@ class ControllerManager:
     def stop(self):
         self._device_manager.stop()
 
-    def known_controllers(self):
-        # TODO: Return known devices
-        # see https://github.com/bbirand/python-dbus-gatt/blob/master/discovery.py
-        return []
+    def controllers(self):
+        # TODO: Use self._device_manager.devices() but don't reinstantiate controllers
+        return {}
 
     def start_discovery(self):
         self._device_manager.start_discovery()
