@@ -85,7 +85,8 @@ class Controller(gatt.Device):
 
     def disconnected(self):
         super().disconnected()
-        self.listener.disconnected()
+        if self.listener:
+            self.listener.disconnected()
 
     def services_resolved(self):
         super().services_resolved()
