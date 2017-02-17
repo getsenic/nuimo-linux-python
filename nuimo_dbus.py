@@ -133,7 +133,9 @@ class GattDevice:
             if self.is_services_resolved():
                 self.services_resolved()
         except dbus.exceptions.DBusException as e:
-            if (e.get_dbus_name() == "org.bluez.Error.Failed") and (e.get_dbus_message() == "Operation already in progress"):
+            if (e.get_dbus_name() == "org.freedesktop.DBus.Error.UnknownObject"):
+                self.connect_failed(Exception("Nuimo Controller does not exist, check adapter name and MAC address."))
+            elif (e.get_dbus_name() == "org.bluez.Error.Failed") and (e.get_dbus_message() == "Operation already in progress"):
                 pass
             elif (self.__connect_retry_attempt < 5) and (e.get_dbus_name() == "org.bluez.Error.Failed") and (e.get_dbus_message() == "Software caused connection abort"):
                 self.__connect()
