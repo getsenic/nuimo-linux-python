@@ -44,8 +44,7 @@ class GattCharacteristic:
         self.object.StartNotify(
             reply_handler=self.enable_notifications_succeeded,
             error_handler=self.enable_notifications_failed,
-            dbus_interface="org.bluez.GattCharacteristic1"
-        )
+            dbus_interface="org.bluez.GattCharacteristic1")
 
     def enable_notifications_succeeded(self):
         print("notification_enabling_succeeded")
@@ -126,7 +125,6 @@ class GattDevice:
         pass
 
     def __connect(self):
-        print("__connect...")
         self.__connect_retry_attempt += 1
         try:
             self.object.Connect()
