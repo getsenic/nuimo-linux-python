@@ -203,7 +203,7 @@ class GattDevice:
         pass
 
 
-class NuimoGesture(Enum):
+class Gesture(Enum):
     BUTTON_PRESS = 1
     BUTTON_RELEASE = 2
     SWIPE_LEFT = 3
@@ -224,7 +224,7 @@ class NuimoGesture(Enum):
     FLY_UPDOWN = 19
 
 
-class NuimoGestureEvent:
+class GestureEvent:
     def __init__(self, gesture, value=None):
         self.gesture = gesture
         self.value = value
@@ -233,13 +233,13 @@ class NuimoGestureEvent:
         return str(self.gesture) + (("," + str(self.value)) if self.value is not None else "")
 
 
-class NuimoLedMatrix:
+class LedMatrix:
     def __init__(self, string):
         string = "{:<81}".format(string[:81])
         self.leds = [c not in [' ', '0'] for c in string]
 
 
-class NuimoController(GattDevice):
+class Controller(GattDevice):
     NUIMO_SERVICE_UUID                    = "f29b1525-cb19-40f3-be5c-7241ecb82fd2"
     BUTTON_CHARACTERISTIC_UUID            = "f29b1529-cb19-40f3-be5c-7241ecb82fd2"
     TOUCH_CHARACTERISTIC_UUID             = "f29b1527-cb19-40f3-be5c-7241ecb82fd2"
@@ -347,22 +347,22 @@ class NuimoController(GattDevice):
         }[characteristic.uuid](value)
 
     def notify_button_event(self, value):
-        self.notify_gesture_event(gesture=NuimoGesture.BUTTON_RELEASE if value[0] == 0 else NuimoGesture.BUTTON_PRESS)
+        self.notify_gesture_event(gesture=Gesture.BUTTON_RELEASE if value[0] == 0 else Gesture.BUTTON_PRESS)
 
     def notify_touch_event(self, value):
         gesture = {
-            0:  NuimoGesture.SWIPE_LEFT,
-            1:  NuimoGesture.SWIPE_RIGHT,
-            2:  NuimoGesture.SWIPE_UP,
-            3:  NuimoGesture.SWIPE_DOWN,
-            4:  NuimoGesture.TOUCH_LEFT,
-            5:  NuimoGesture.TOUCH_RIGHT,
-            6:  NuimoGesture.TOUCH_TOP,
-            7:  NuimoGesture.TOUCH_BOTTOM,
-            8:  NuimoGesture.LONGTOUCH_LEFT,
-            9:  NuimoGesture.LONGTOUCH_RIGHT,
-            10: NuimoGesture.LONGTOUCH_TOP,
-            11: NuimoGesture.LONGTOUCH_BOTTOM
+            0:  Gesture.SWIPE_LEFT,
+            1:  Gesture.SWIPE_RIGHT,
+            2:  Gesture.SWIPE_UP,
+            3:  Gesture.SWIPE_DOWN,
+            4:  Gesture.TOUCH_LEFT,
+            5:  Gesture.TOUCH_RIGHT,
+            6:  Gesture.TOUCH_TOP,
+            7:  Gesture.TOUCH_BOTTOM,
+            8:  Gesture.LONGTOUCH_LEFT,
+            9:  Gesture.LONGTOUCH_RIGHT,
+            10: Gesture.LONGTOUCH_TOP,
+            11: Gesture.LONGTOUCH_BOTTOM
         }[value[0]]
         if gesture is not None:
             self.notify_gesture_event(gesture=gesture)
@@ -371,22 +371,22 @@ class NuimoController(GattDevice):
         rotation_value = value[0] + (value[1] << 8)
         if (value[1] >> 7) > 0:
             rotation_value -= 1 << 16
-        self.notify_gesture_event(gesture=NuimoGesture.ROTATION, value=rotation_value)
+        self.notify_gesture_event(gesture=Gesture.ROTATION, value=rotation_value)
 
     def notify_fly_event(self, value):
         if value[0] == 0:
-            self.notify_gesture_event(gesture=NuimoGesture.FLY_LEFT)
+            self.notify_gesture_event(gesture=Gesture.FLY_LEFT)
         elif value[0] == 1:
-            self.notify_gesture_event(gesture=NuimoGesture.FLY_RIGHT)
+            self.notify_gesture_event(gesture=Gesture.FLY_RIGHT)
         elif value[0] == 4:
-            self.notify_gesture_event(gesture=NuimoGesture.FLY_UPDOWN, value=value[1])
+            self.notify_gesture_event(gesture=Gesture.FLY_UPDOWN, value=value[1])
 
     def notify_gesture_event(self, gesture, value=None):
         if self.listener:
-            self.listener.received_gesture_event(NuimoGestureEvent(gesture=gesture, value=value))
+            self.listener.received_gesture_event(GestureEvent(gesture=gesture, value=value))
 
 
-class NuimoControllerListener:
+class ControllerListener:
     def received_gesture_event(self, event):
         pass
 
@@ -406,13 +406,13 @@ class NuimoControllerListener:
         pass
 
 
-class NuimoControllerManagerListener:
+class ControllerManagerListener:
     def controller_discovered(self, controller):
         pass
 
 
 # TODO: Extract reusable `GattDeviceDiscovery` class
-class NuimoControllerManager:
+class ControllerManager:
     def __init__(self, adapter_name="hci0"):
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         self.mainloop = GObject.MainLoop()
@@ -460,7 +460,7 @@ class NuimoControllerManager:
         # see http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/adapter-api.txt#n57
         self.__discovered_controllers = {}
         self.adapter.SetDiscoveryFilter({
-            "UUIDs": NuimoController.SERVICE_UUIDS,
+            "UUIDs": Controller.SERVICE_UUIDS,
             "Transport": "le"})
         self.adapter.StartDiscovery()
 
@@ -484,7 +484,7 @@ class NuimoControllerManager:
         alias = GattDevice(adapter_name=self.adapter_name, mac_address=mac_address).alias()
         if alias != "Nuimo":
             return
-        controller = NuimoController(adapter_name=self.adapter_name, mac_address=mac_address)
+        controller = Controller(adapter_name=self.adapter_name, mac_address=mac_address)
         discovered_controller = self.__discovered_controllers.get(controller.mac_address, None)
         if discovered_controller is None:
             self.__discovered_controllers[mac_address] = controller
@@ -494,7 +494,7 @@ class NuimoControllerManager:
             discovered_controller.advertised()
 
 
-class NuimoControllerPrintListener(NuimoControllerListener):
+class ControllerPrintListener(ControllerListener):
     def __init__(self, controller):
         self.controller = controller
 

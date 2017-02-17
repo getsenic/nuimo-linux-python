@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-import dbus
 import sys
 from argparse import ArgumentParser
-from nuimo_dbus import *
+import nuimo_dbus as nuimo
 
 controller_manager = None
 
-class NuimoControllerTestListener(NuimoControllerPrintListener):
+
+class NuimoControllerTestListener(nuimo.ControllerPrintListener):
     def __init__(self, controller, auto_reconnect=False):
         super().__init__(controller)
         self.auto_reconnect = auto_reconnect
@@ -30,7 +30,7 @@ class NuimoControllerTestListener(NuimoControllerPrintListener):
 
     def received_gesture_event(self, event):
         super().received_gesture_event(event)
-        self.controller.display_matrix(NuimoLedMatrix(
+        self.controller.display_matrix(nuimo.LedMatrix(
             "*        "
             " *       "
             "  *      "
@@ -42,12 +42,7 @@ class NuimoControllerTestListener(NuimoControllerPrintListener):
             "        *"))
 
 
-class NuimoControllerManagerPrintListener(NuimoControllerManagerListener):
-    def controller_discovered(self, controller):
-        print("Discovered Nuimo controller", controller.mac_address)
-
-
-class NuimoControllerManagerPrintListener(NuimoControllerManagerListener):
+class NuimoControllerManagerPrintListener(nuimo.ControllerManagerListener):
     def controller_discovered(self, controller):
         print("Discovered Nuimo controller", controller.mac_address)
 
@@ -64,21 +59,21 @@ if __name__ == '__main__':
 
     print("Terminate with Ctrl+C")
 
-    controller_manager = NuimoControllerManager(adapter_name=args.adapter)
+    controller_manager = nuimo.ControllerManager(adapter_name=args.adapter)
 
     if args.discover:
         controller_manager.listener = NuimoControllerManagerPrintListener()
         controller_manager.start_discovery()
     elif args.connect:
-        controller = NuimoController(adapter_name=args.adapter, mac_address=args.connect)
+        controller = nuimo.Controller(adapter_name=args.adapter, mac_address=args.connect)
         controller.listener = NuimoControllerTestListener(controller=controller)
         controller.connect()
     elif args.auto:
-        controller = NuimoController(adapter_name=args.adapter, mac_address=args.auto)
+        controller = nuimo.Controller(adapter_name=args.adapter, mac_address=args.auto)
         controller.listener = NuimoControllerTestListener(controller=controller, auto_reconnect=True)
         controller.connect()
     elif args.disconnect:
-        controller = NuimoController(adapter_name=args.adapter, mac_address=args.disconnect)
+        controller = nuimo.Controller(adapter_name=args.adapter, mac_address=args.disconnect)
         controller.listener = NuimoControllerTestListener(controller=controller)
         controller.disconnect()
 
