@@ -101,6 +101,10 @@ class GattDevice:
         self.properties = dbus.Interface(self.object, "org.freedesktop.DBus.Properties")
         self.properties_signal_match = self.properties.connect_to_signal("PropertiesChanged", self.properties_changed)
 
+    def advertised(self):
+        """Called when an advertisement package has been received from the device. Requires an active device discovery."""
+        pass
+
     def invalidate(self):
         self.properties_signal_match.remove()
         self.invalidate_services()
@@ -433,6 +437,8 @@ class NuimoControllerManager:
     def start_discovery(self):
         # TODO: Support service UUID filter, see http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/adapter-api.txt#n57
         scan_filter = {}
+        self.__discovered_controllers = {}
+
         self.adapter.SetDiscoveryFilter({
             "UUIDs": NuimoController.SERVICE_UUIDS,
             "Transport": "le"})
@@ -442,23 +448,30 @@ class NuimoControllerManager:
         self.adapter.StopDiscovery()
 
     def interfaces_added(self, path, interfaces):
-        if (not self.listener) or ('org.bluez.Device1' not in interfaces):
+        self.__device_discovered(path, interfaces)
+
+    def properties_changed(self, interface, changed, invalidated, path):
+        # TODO: Handle `changed` and `invalidated` properties and update device
+        self.__device_discovered(path, [interface])
+
+    def __device_discovered(self, path, interfaces):
+        if "org.bluez.Device1" not in interfaces:
             return
         match = self.device_path_regex.match(path)
         if not match:
             return
         mac_address = match.group(1)[1:].replace("_", ":").lower()
         alias = GattDevice(adapter_name=self.adapter_name, mac_address=mac_address).alias()
-        if alias == "Nuimo":
-            self.listener.controller_discovered(NuimoController(adapter_name=self.adapter_name, mac_address=mac_address))
-
-    def properties_changed(self, interface, changed, invalidated, path):
-        # TODO: Update device's reachability as we get updated RSSI values here every now and then
-        # print('properties_changed', interface)
-        # if "org.bluez.Device1" in interface:
-        #     for prop in changed:
-        #         print(interface, path, prop, changed[prop])
-        pass
+        if alias != "Nuimo":
+            return
+        controller = NuimoController(adapter_name=self.adapter_name, mac_address=mac_address)
+        discovered_controller = self.__discovered_controllers.get(controller.mac_address, None)
+        if discovered_controller is None:
+            self.__discovered_controllers[mac_address] = controller
+            if self.listener is not None:
+                self.listener.controller_discovered(controller)
+        else:
+            discovered_controller.advertised()
 
 
 class NuimoControllerPrintListener(NuimoControllerListener):
