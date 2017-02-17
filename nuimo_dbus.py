@@ -50,6 +50,9 @@ class GattCharacteristic:
         print('notification_enabling_succeeded')
 
     def enable_notifications_failed(self, error):
+        if ((error.get_dbus_name() == 'org.bluez.Error.Failed') and
+            (error.get_dbus_message() == "Already notifying")):
+            return
         print('notification_enabling_failed', error)
 
 
