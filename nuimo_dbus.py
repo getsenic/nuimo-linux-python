@@ -75,7 +75,9 @@ class GattService:
         self.invalidate_characteristics()
 
         characteristics_regex = re.compile(self.path + "/char[0-9abcdef]{4}$")
-        managed_characteristics = [char for char in self.object_manager.GetManagedObjects().items() if characteristics_regex.match(char[0])]
+        managed_characteristics = [
+            char for char in self.object_manager.GetManagedObjects().items()
+            if characteristics_regex.match(char[0])]
         self.characteristics = [GattCharacteristic(
             service=self,
             path=c[0],
@@ -86,7 +88,9 @@ class GattDevice:
     def __init__(self, adapter_name, mac_address):
         self.mac_address = mac_address
         self.bus = dbus.SystemBus()
-        self.object_manager = dbus.Interface(self.bus.get_object("org.bluez", '/'), "org.freedesktop.DBus.ObjectManager")
+        self.object_manager = dbus.Interface(
+            self.bus.get_object("org.bluez", '/'),
+            "org.freedesktop.DBus.ObjectManager")
 
         # TODO: Get adapter from managed objects? See bluezutils.py
         adapter_object = self.bus.get_object("org.bluez", "/org/bluez/" + adapter_name)
@@ -102,7 +106,7 @@ class GattDevice:
         self.properties_signal_match = self.properties.connect_to_signal("PropertiesChanged", self.properties_changed)
 
     def advertised(self):
-        """Called when an advertisement package has been received from the device. Requires an active device discovery."""
+        """Called when an advertisement package has been received from the device. Requires device discovery to run."""
         pass
 
     def invalidate(self):
@@ -137,12 +141,16 @@ class GattDevice:
         except dbus.exceptions.DBusException as e:
             if (e.get_dbus_name() == "org.freedesktop.DBus.Error.UnknownObject"):
                 self.connect_failed(Exception("Nuimo Controller does not exist, check adapter name and MAC address."))
-            elif (e.get_dbus_name() == "org.bluez.Error.Failed") and (e.get_dbus_message() == "Operation already in progress"):
+            elif ((e.get_dbus_name() == "org.bluez.Error.Failed") and
+                  (e.get_dbus_message() == "Operation already in progress")):
                 pass
-            elif (self.__connect_retry_attempt < 5) and (e.get_dbus_name() == "org.bluez.Error.Failed") and (e.get_dbus_message() == "Software caused connection abort"):
+            elif ((self.__connect_retry_attempt < 5) and
+                  (e.get_dbus_name() == "org.bluez.Error.Failed") and
+                  (e.get_dbus_message() == "Software caused connection abort")):
                 self.__connect()
             elif (e.get_dbus_name() == "org.freedesktop.DBus.Error.NoReply"):
-                # TODO: How to handle properly? Reproducable when we repeatedly shut off Nuimo immediately after its flashing Bluetooth icon appears
+                # TODO: How to handle properly?
+                # Reproducable when we repeatedly shut off Nuimo immediately after its flashing Bluetooth icon appears
                 self.connect_failed(e)
             else:
                 self.connect_failed(e)
@@ -151,7 +159,8 @@ class GattDevice:
         self.object.Disconnect()
 
     def connected(self):
-        """Will be called when `connect()` has finished connecting to the device. Will not be called if the device was already connected."""
+        """Will be called when `connect()` has finished connecting to the device.
+           Will not be called if the device was already connected."""
         pass
 
     def disconnected(self):
@@ -181,7 +190,9 @@ class GattDevice:
         self.invalidate_services()
 
         services_regex = re.compile(self.device_path + "/service[0-9abcdef]{4}$")
-        managed_services = [service for service in self.object_manager.GetManagedObjects().items() if services_regex.match(service[0])]
+        managed_services = [
+            service for service in self.object_manager.GetManagedObjects().items()
+            if services_regex.match(service[0])]
         self.services = [GattService(
             device=self,
             path=service[0],
@@ -294,7 +305,9 @@ class NuimoController(GattDevice):
         ]
 
         for characteristic_uuid in notification_characteristic_uuids:
-            characteristic = next((characteristic for characteristic in nuimo_service.characteristics if characteristic.uuid == characteristic_uuid), None)
+            characteristic = next((
+                characteristic for characteristic in nuimo_service.characteristics
+                if characteristic.uuid == characteristic_uuid), None)
             characteristic.enable_notifications()
 
         # TODO: Only fire `connected` when we read the firmware version or battery value as in other SDKs
@@ -302,9 +315,10 @@ class NuimoController(GattDevice):
             self.listener.connected()
 
     def display_matrix(self, matrix, interval=2.0, brightness=1.0, options=0):
-        matrix_bytes = list(map(
-            lambda leds: functools.reduce(lambda acc, led: acc + (1 << led if leds[led] else 0), range(0, len(leds)), 0),
-            [matrix.leds[i:i + 8] for i in range(0, 81, 8)]))
+        matrix_bytes = list(
+            map(lambda leds: functools.reduce(
+                lambda acc, led: acc + (1 << led if leds[led] else 0), range(0, len(leds)), 0),
+                [matrix.leds[i:i + 8] for i in range(0, 81, 8)]))
 
         # TODO: Support `fading` parameter
         # if fading:
@@ -316,8 +330,11 @@ class NuimoController(GattDevice):
         matrix_bytes += [max(0, min(255, int(brightness * 255.0))), max(0, min(255, int(interval * 10.0)))]
 
         nuimo_service = next((service for service in self.services if service.uuid == self.NUIMO_SERVICE_UUID), None)
-        matrix_characteristic = next((characteristic for characteristic in nuimo_service.characteristics if characteristic.uuid == self.LED_MATRIX_CHARACTERISTIC_UUID), None)
-        # TODO: Fallback to legacy led matrix service (this is needed for older Nuimo firmware were the LED characteristic was a separate service)
+        matrix_characteristic = next((
+            characteristic for characteristic in nuimo_service.characteristics
+            if characteristic.uuid == self.LED_MATRIX_CHARACTERISTIC_UUID), None)
+        # TODO: Fallback to legacy led matrix service
+        # this is needed for older Nuimo firmware were the LED characteristic was a separate service)
 
         matrix_characteristic.write_value(matrix_bytes)
 
@@ -401,7 +418,9 @@ class NuimoControllerManager:
         self.mainloop = GObject.MainLoop()
         self.listener = None
         self.bus = dbus.SystemBus()
-        self.object_manager = dbus.Interface(self.bus.get_object("org.bluez", '/'), "org.freedesktop.DBus.ObjectManager")
+        self.object_manager = dbus.Interface(
+            self.bus.get_object("org.bluez", '/'),
+            "org.freedesktop.DBus.ObjectManager")
 
         # TODO: Get adapter from managed objects? See bluezutils.py
         adapter_object = self.bus.get_object("org.bluez", "/org/bluez/" + adapter_name)
@@ -423,7 +442,8 @@ class NuimoControllerManager:
             path_keyword='path')
 
     def run(self):
-        """Starts the main loop that is necessary to receive Bluetooth events from the Bluetooth driver. This is blocking command that blocks until you call `stop()` to stop the main loop."""
+        """Starts the main loop that is necessary to receive Bluetooth events from the Bluetooth driver.
+           This call blocks until you call `stop()` to stop the main loop."""
         self.mainloop.run()
 
     def stop(self):
@@ -431,14 +451,14 @@ class NuimoControllerManager:
         self.mainloop.quit()
 
     def known_controllers(self):
-        #TODO: Return known devices, see https://github.com/bbirand/python-dbus-gatt/blob/master/discovery.py
+        # TODO: Return known devices
+        # see https://github.com/bbirand/python-dbus-gatt/blob/master/discovery.py
         return []
 
     def start_discovery(self):
-        # TODO: Support service UUID filter, see http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/adapter-api.txt#n57
-        scan_filter = {}
+        # TODO: Support service UUID filter
+        # see http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/adapter-api.txt#n57
         self.__discovered_controllers = {}
-
         self.adapter.SetDiscoveryFilter({
             "UUIDs": NuimoController.SERVICE_UUIDS,
             "Transport": "le"})
