@@ -4,6 +4,8 @@ import re
 
 from gi.repository import GObject
 
+from . import errors
+
 
 class DeviceManager:
     def __init__(self, adapter_name):
@@ -320,6 +322,7 @@ class Characteristic:
         self.service.device.characteristic_write_value_succeeded(self)
 
     def write_value_failed(self, error):
+        error = errors.InProgress() if error.get_dbus_name() == "org.bluez.Error.InProgress" else errors.Unknown()
         self.service.device.characteristic_write_value_failed(self, error)
 
     def enable_notifications(self):
@@ -336,3 +339,4 @@ class Characteristic:
             (error.get_dbus_message() == "Already notifying")):
             return
         print('notification_enabling_failed', error)
+
