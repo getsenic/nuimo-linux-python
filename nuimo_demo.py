@@ -2,7 +2,7 @@
 
 import sys
 from argparse import ArgumentParser
-import nuimo_dbus as nuimo
+import nuimo
 
 controller_manager = None
 
