@@ -39,7 +39,7 @@ class NuimoControllerTestListener(nuimo.ControllerPrintListener):
             "     *   "
             "      *  "
             "       * "
-            "        *"))
+            "        *"), fading=True)
 
 
 class NuimoControllerManagerPrintListener(nuimo.ControllerManagerListener):

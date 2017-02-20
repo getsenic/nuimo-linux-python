@@ -112,20 +112,18 @@ class Controller(gatt.Device):
         if self.listener:
             self.listener.connected()
 
-    def display_matrix(self, matrix, interval=2.0, brightness=1.0, options=0):
+    def display_matrix(self, matrix, interval=2.0, brightness=1.0, fading=False, ignore_duplicates=False):
+        # TODO: Support ignore duplicate matrix writes
         matrix_bytes = list(
             map(lambda leds: functools.reduce(
                 lambda acc, led: acc + (1 << led if leds[led] else 0), range(0, len(leds)), 0),
                 [matrix.leds[i:i + 8] for i in range(0, 81, 8)]))
 
-        # TODO: Support `fading` parameter
-        # if fading:
-        #     matrix_bytes_list[10] ^= 1 << 4
-
-        # TODO: Support write requests without response
-        # TODO: Support ignore duplicate matrix writes
 
         matrix_bytes += [max(0, min(255, int(brightness * 255.0))), max(0, min(255, int(interval * 10.0)))]
+
+        if fading:
+            matrix_bytes[10] ^= 1 << 4
 
         nuimo_service = next((service for service in self.services if service.uuid == self.NUIMO_SERVICE_UUID), None)
         matrix_characteristic = next((
@@ -134,6 +132,8 @@ class Controller(gatt.Device):
         # TODO: Fallback to legacy led matrix service
         # this is needed for older Nuimo firmware were the LED characteristic was a separate service)
 
+        # TODO: Support write requests without response
+        #       bluetoothd probably doesn't support selecting the request mode
         matrix_characteristic.write_value(matrix_bytes)
 
     def characteristic_value_updated(self, characteristic, value):
