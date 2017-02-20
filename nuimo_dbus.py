@@ -97,6 +97,11 @@ class Controller(gatt.Device):
                 print("   ", characteristic.path, characteristic.uuid)
 
         nuimo_service = next(service for service in self.services if service.uuid == self.NUIMO_SERVICE_UUID)
+        if nuimo_service is None:
+            if self.listener:
+                # TODO: Use proper exception subclass
+                self.listener.connect_failed(Exception("Nuimo GATT service is missing"))
+            return
 
         self._matrix_writer.led_matrix_characteristic = next((
             characteristic for characteristic in nuimo_service.characteristics
