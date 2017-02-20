@@ -13,7 +13,16 @@ class DeviceManager:
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
         self.mainloop = GObject.MainLoop()
         self.bus = dbus.SystemBus()
-        adapter_object = self.bus.get_object('org.bluez', '/org/bluez/' + adapter_name)
+
+        try:
+            adapter_object = self.bus.get_object('org.bluez', '/org/bluez/' + adapter_name)
+        except dbus.exceptions.DBusException as e:
+            # TODO: Use custom exception type
+            raise Exception(
+                "Cannot initialize Bluetooth adapter: " +
+                e.get_dbus_name() + ": " +
+                e.get_dbus_message()) from e
+
         self.adapter = dbus.Interface(adapter_object, 'org.bluez.Adapter1')
         self.device_path_regex = re.compile('^/org/bluez/' + adapter_name + '/dev((_[A-Z0-9]{2}){6})$')
 
