@@ -136,10 +136,10 @@ class Controller(gatt.Device):
 
     def characteristic_value_updated(self, characteristic, value):
         {
-            self.BUTTON_CHARACTERISTIC_UUID:   self.notify_button_event,
-            self.TOUCH_CHARACTERISTIC_UUID:    self.notify_touch_event,
-            self.ROTATION_CHARACTERISTIC_UUID: self.notify_rotation_event,
-            self.FLY_CHARACTERISTIC_UUID:      self.notify_fly_event
+            self.BUTTON_CHARACTERISTIC_UUID:   self._notify_button_event,
+            self.TOUCH_CHARACTERISTIC_UUID:    self._notify_touch_event,
+            self.ROTATION_CHARACTERISTIC_UUID: self._notify_rotation_event,
+            self.FLY_CHARACTERISTIC_UUID:      self._notify_fly_event
         }[characteristic.uuid](value)
 
     def characteristic_write_value_succeeded(self, characteristic):
@@ -150,10 +150,10 @@ class Controller(gatt.Device):
         if characteristic.uuid == self.LED_MATRIX_CHARACTERISTIC_UUID:
             self._matrix_writer.write_failed(error)
 
-    def notify_button_event(self, value):
-        self.notify_gesture_event(gesture=Gesture.BUTTON_RELEASE if value[0] == 0 else Gesture.BUTTON_PRESS)
+    def _notify_button_event(self, value):
+        self._notify_gesture_event(gesture=Gesture.BUTTON_RELEASE if value[0] == 0 else Gesture.BUTTON_PRESS)
 
-    def notify_touch_event(self, value):
+    def _notify_touch_event(self, value):
         gesture = {
             0:  Gesture.SWIPE_LEFT,
             1:  Gesture.SWIPE_RIGHT,
@@ -169,23 +169,23 @@ class Controller(gatt.Device):
             11: Gesture.LONGTOUCH_BOTTOM
         }[value[0]]
         if gesture is not None:
-            self.notify_gesture_event(gesture=gesture)
+            self._notify_gesture_event(gesture=gesture)
 
-    def notify_rotation_event(self, value):
+    def _notify_rotation_event(self, value):
         rotation_value = value[0] + (value[1] << 8)
         if (value[1] >> 7) > 0:
             rotation_value -= 1 << 16
-        self.notify_gesture_event(gesture=Gesture.ROTATION, value=rotation_value)
+        self._notify_gesture_event(gesture=Gesture.ROTATION, value=rotation_value)
 
-    def notify_fly_event(self, value):
+    def _notify_fly_event(self, value):
         if value[0] == 0:
-            self.notify_gesture_event(gesture=Gesture.FLY_LEFT)
+            self._notify_gesture_event(gesture=Gesture.FLY_LEFT)
         elif value[0] == 1:
-            self.notify_gesture_event(gesture=Gesture.FLY_RIGHT)
+            self._notify_gesture_event(gesture=Gesture.FLY_RIGHT)
         elif value[0] == 4:
-            self.notify_gesture_event(gesture=Gesture.FLY_UPDOWN, value=value[1])
+            self._notify_gesture_event(gesture=Gesture.FLY_UPDOWN, value=value[1])
 
-    def notify_gesture_event(self, gesture, value=None):
+    def _notify_gesture_event(self, gesture, value=None):
         if self.listener:
             self.listener.received_gesture_event(GestureEvent(gesture=gesture, value=value))
 
