@@ -98,6 +98,12 @@ class Controller(gatt.Device):
 
         nuimo_service = next(service for service in self.services if service.uuid == self.NUIMO_SERVICE_UUID)
 
+        self._matrix_writer.led_matrix_characteristic = next((
+            characteristic for characteristic in nuimo_service.characteristics
+            if characteristic.uuid == self.LED_MATRIX_CHARACTERISTIC_UUID), None)
+        # TODO: Fallback to legacy led matrix service
+        #       This is needed for older Nuimo firmware were the LED characteristic was a separate service)
+
         notification_characteristic_uuids = [
             self.BUTTON_CHARACTERISTIC_UUID,
             self.TOUCH_CHARACTERISTIC_UUID,
@@ -183,6 +189,8 @@ class Controller(gatt.Device):
 class _LedMatrixWriter():
     def __init__(self, controller):
         self.controller = controller
+        self.led_matrix_characteristic = None
+
         self.last_written_matrix = None
         self.last_written_matrix_interval = 0
         self.last_written_matrix_date = datetime.utcfromtimestamp(0)
@@ -213,7 +221,7 @@ class _LedMatrixWriter():
             self.write_now()
 
     def write_now(self):
-        if not self.controller.is_connected():
+        if not self.controller.is_connected() or self.led_matrix_characteristic is None:
             return
 
         matrix_bytes = list(
@@ -231,23 +239,11 @@ class _LedMatrixWriter():
         # TODO: Support write requests without response
         #       bluetoothd probably doesn't support selecting the request mode
         self.is_waiting_for_response = True
-        self.led_matrix_characteristic().write_value(matrix_bytes)
+        self.led_matrix_characteristic.write_value(matrix_bytes)
 
         self.last_written_matrix = self.matrix
         self.last_written_matrix_date = datetime.now()
         self.last_written_matrix_interval = self.interval
-
-    def led_matrix_characteristic(self):
-        # TODO: Controller should assign the characteristic and we test for None only
-        nuimo_service = next((
-            service for service in self.controller.services
-            if service.uuid == Controller.NUIMO_SERVICE_UUID), None)
-        matrix_characteristic = next((
-            characteristic for characteristic in nuimo_service.characteristics
-            if characteristic.uuid == Controller.LED_MATRIX_CHARACTERISTIC_UUID), None)
-        # TODO: Fallback to legacy led matrix service
-        # this is needed for older Nuimo firmware were the LED characteristic was a separate service)
-        return matrix_characteristic
 
     def write_succeeded(self):
         self.is_waiting_for_response = False
