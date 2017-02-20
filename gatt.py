@@ -248,6 +248,14 @@ class Device:
         # To be implemented by subclass
         pass
 
+    def characteristic_write_value_succeeded(self, characteristic):
+        # To be implemented by subclass
+        pass
+
+    def characteristic_write_value_failed(self, characteristic, error):
+        # To be implemented by subclass
+        pass
+
 
 class Service:
     def __init__(self, device, path, uuid):
@@ -309,10 +317,10 @@ class Characteristic:
             dbus_interface='org.bluez.GattCharacteristic1')
 
     def write_value_succeeded(self):
-        print('write_value_succeeded')
+        self.service.device.characteristic_write_value_succeeded(self)
 
     def write_value_failed(self, error):
-        print('write_value_failed', error)
+        self.service.device.characteristic_write_value_failed(self, error)
 
     def enable_notifications(self):
         self.object.StartNotify(

@@ -144,6 +144,12 @@ class Controller(gatt.Device):
             self.FLY_CHARACTERISTIC_UUID:      self.notify_fly_event
         }[characteristic.uuid](value)
 
+    def characteristic_write_value_succeeded(self, characteristic):
+        print("characteristic_write_value_succeeded")
+
+    def characteristic_write_value_failed(self, characteristic, error):
+        print("characteristic_write_value_failed", error)
+
     def notify_button_event(self, value):
         self.notify_gesture_event(gesture=Gesture.BUTTON_RELEASE if value[0] == 0 else Gesture.BUTTON_PRESS)
 
