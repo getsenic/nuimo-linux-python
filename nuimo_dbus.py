@@ -3,34 +3,32 @@ import gatt
 from enum import Enum
 
 
-class ControllerManager:
+class ControllerManager(gatt.DeviceManager):
     def __init__(self, adapter_name='hci0'):
+        super().__init__(adapter_name)
         self.listener = None
-        self.adapter_name = adapter_name
-        self._device_manager = gatt.DeviceManager(adapter_name=adapter_name)
-        self._device_manager.listener = self
-
-    def run(self):
-        self._device_manager.run()
-
-    def stop(self):
-        self._device_manager.stop()
+        self.discovered_controllers = {}
 
     def controllers(self):
-        # TODO: Use self._device_manager.devices() but don't reinstantiate controllers
-        return {}
+        return self.devices()
 
     def start_discovery(self):
-        self._device_manager.start_discovery()
+        self._discovered_controllers = {}
+        super().start_discovery(service_uuids=Controller.SERVICE_UUIDS)
 
-    def stop_discovery(self):
-        self._device_manager.stop_discovery()
+    def make_device(self, mac_address):
+        device = super().make_device(mac_address)
+        if device.alias() != 'Nuimo':
+            return None
+        return Controller(adapter_name=self.adapter_name, mac_address=mac_address)
 
     def device_discovered(self, device):
-        if (self.listener is None) or (device.alias() != 'Nuimo'):
+        super().device_discovered(device)
+        if device.mac_address in self.discovered_controllers:
             return
-        controller = Controller(adapter_name=self.adapter_name, mac_address=device.mac_address)
-        self.listener.controller_discovered(controller)
+        self.discovered_controllers[device.mac_address] = device
+        if self.listener is not None:
+            self.listener.controller_discovered(device)
 
 
 class ControllerManagerListener:

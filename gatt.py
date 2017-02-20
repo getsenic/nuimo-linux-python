@@ -43,7 +43,9 @@ class DeviceManager:
         for mac_address in mac_addresses:
             if self._devices.get(mac_address, None) is not None:
                 continue
-            self._devices[mac_address] = Device(adapter_name=self.adapter_name, mac_address=mac_address)
+            device = self.make_device(mac_address)
+            if device is not None:
+                self._devices[mac_address] = device
 
         self._interface_added_signal = self.bus.add_signal_receiver(
             self._interfaces_added,
@@ -78,7 +80,6 @@ class DeviceManager:
         filter = {'Transport': 'le'}
         if len(service_uuids) > 0:  # D-Bus doesn't like empty lists, needs to guess type
             filter['UUIDs'] = service_uuids
-        self._discovered_devices = {}
         self.adapter.SetDiscoveryFilter(filter)
         self.adapter.StartDiscovery()
 
@@ -100,16 +101,14 @@ class DeviceManager:
             return
         device = self._devices.get(mac_address, None)
         if device is None:
-            # Should not happen as we listen to "interfaces added" events, but be robust
-            device = Device(adapter_name=self.adapter_name, mac_address=mac_address)
-            self._devices[mac_address] = device
+            device = self.make_device(mac_address)
+        if device is None:
+            return
+        self._devices[mac_address] = device
+        self.device_discovered(device)
 
-        if self._discovered_devices.get(mac_address, None) is None:
-            self._discovered_devices[mac_address] = device
-            if self.listener:
-                self.listener.device_discovered(device)
-        else:
-            device.advertised()
+    def device_discovered(self, device):
+        device.advertised()
 
     def _mac_address(self, device_path):
         match = self.device_path_regex.match(device_path)
@@ -117,18 +116,18 @@ class DeviceManager:
             return None
         return match.group(1)[1:].replace('_', ':').lower()
 
+    def make_device(self, mac_address):
+        """Makes and returns a `Device` instance.
+           Can be overridden to return a subclass instance of `Device`.
+           Can return `None` if specified device at mac address is not supported."""
+        return Device(adapter_name=self.adapter_name, mac_address=mac_address)
+
     def create_device(self, mac_address):
+        # TODO: Implement
         pass
 
     def remove_device(self, mac_address):
-        pass
-
-
-class DeviceManagerListener:
-    def device_discovered(self, device):
-        pass
-
-    def device_disappeared(self, device):
+        # TODO: Implement
         pass
 
 
