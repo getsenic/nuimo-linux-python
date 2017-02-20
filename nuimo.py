@@ -5,15 +5,32 @@ from enum import Enum
 
 
 class ControllerManager(gatt.DeviceManager):
+    """
+    Entry point for managing and discovering Nuimo ``Controller``s.
+    """
+
     def __init__(self, adapter_name='hci0'):
+        """
+        Instantiates a ``ControllerManager``
+
+        :param adapter_name: name of Bluetooth adapter used by this controller manager
+        """
         super().__init__(adapter_name)
         self.listener = None
         self.discovered_controllers = {}
 
     def controllers(self):
+        """
+        Returns all known Nuimo controllers.
+        """
         return self.devices()
 
     def start_discovery(self):
+        """
+        Starts a Bluetooth discovery for Nuimo controllers.
+
+        Assign a `ControllerManagerListener` to the `listener` attribute to collect discovered Nuimos.
+        """
         self._discovered_controllers = {}
         super().start_discovery(service_uuids=Controller.SERVICE_UUIDS)
 
@@ -33,11 +50,35 @@ class ControllerManager(gatt.DeviceManager):
 
 
 class ControllerManagerListener:
+    """
+    Base class for receiving discovery events from ``ControllerManager``.
+
+    Assign an instance of your subclass to the ``listener`` attribute of your
+    ``ControllerManager`` to receive discovery events.
+    """
     def controller_discovered(self, controller):
+        """
+        This method gets called once for each Nuimo controller discovered nearby.
+
+        :param controller: the Nuimo controller that was discovered
+        """
         pass
 
 
 class Controller(gatt.Device):
+    """
+    This class represents a Nuimo controller.
+
+    Obtain instances of this class by using the discovery mechanism of
+    ``ControllerManager`` or by manually creating an instance.
+
+    Assign an instance of ``ControllerListener`` to the ``listener`` attribute to
+    receive all Nuimo related events such as connection, disconnection and user input.
+
+    :ivar adapter_name: name of Bluetooth adapter that can connect to this controller
+    :ivar mac_address: MAC address of this Nuimo controller
+    :ivar listener: instance of ``ControllerListener`` that will be notified with all events
+    """
     NUIMO_SERVICE_UUID                    = 'f29b1525-cb19-40f3-be5c-7241ecb82fd2'
     BUTTON_CHARACTERISTIC_UUID            = 'f29b1529-cb19-40f3-be5c-7241ecb82fd2'
     TOUCH_CHARACTERISTIC_UUID             = 'f29b1527-cb19-40f3-be5c-7241ecb82fd2'
@@ -61,11 +102,23 @@ class Controller(gatt.Device):
         UNNAMED3_SERVICE_UUID]
 
     def __init__(self, adapter_name, mac_address):
+        """
+        Create an instance with given Bluetooth adapter name and MAC address.
+
+        :param adapter_name: name of the Bluetooth adapter, i.e. ``hci0`` (default)
+        :param mac_address: MAC address of Nuimo controller with format: ``AA:BB:CC:DD:EE:FF``
+        """
         super().__init__(adapter_name, mac_address)
         self.listener = None
         self._matrix_writer = _LedMatrixWriter(controller=self)
 
     def connect(self):
+        """
+        Tries to connect to this Nuimo controller and blocks until it has connected
+        or failed to connect.
+
+        Notifies ``listener`` as soon has the connection has succeeded or failed.
+        """
         if self.listener:
             self.listener.started_connecting()
         super().connect()
@@ -75,6 +128,11 @@ class Controller(gatt.Device):
             self.listener.connect_failed(error)
 
     def disconnect(self):
+        """
+        Disconnects this Nuimo controller if connected.
+
+        Notifies ``listener`` as soon as Nuimo was disconnected.
+        """
         if self.listener:
             self.listener.started_disconnecting()
         super().disconnect()
@@ -126,6 +184,15 @@ class Controller(gatt.Device):
             self.listener.connected()
 
     def display_matrix(self, matrix, interval=2.0, brightness=1.0, fading=False, ignore_duplicates=False):
+        """
+        Displays an LED matrix on Nuimo's LED matrix display.
+
+        :param matrix: the matrix to display
+        :param interval: interval in seconds until the matrix disappears again
+        :param brightness: led brightness between 0..1
+        :param fading: if True, the previous matrix fades into the new matrix
+        :param ignore_duplicates: if True, the matrix is not sent again if already being displayed
+        """
         self._matrix_writer.write(
             matrix=matrix,
             interval=interval,
@@ -260,6 +327,9 @@ class _LedMatrixWriter():
 
 
 class ControllerListener:
+    """
+    Base class of listeners for a ``NuimoController`` with empty handler implementations.
+    """
     def received_gesture_event(self, event):
         pass
 
@@ -280,6 +350,9 @@ class ControllerListener:
 
 
 class ControllerPrintListener(ControllerListener):
+    """
+    An implementation of ``ControllerListener`` that prints each event.
+    """
     def __init__(self, controller):
         self.controller = controller
 
@@ -306,6 +379,12 @@ class ControllerPrintListener(ControllerListener):
 
 
 class GestureEvent:
+    """
+    A gesture event as it can be received from a Nuimo controller.
+
+    :ivar gesture: gesture that was performed
+    :ivar value: value associated with the gesture, i.e. number of rotation steps
+    """
     def __init__(self, gesture, value=None):
         self.gesture = gesture
         self.value = value
@@ -315,6 +394,9 @@ class GestureEvent:
 
 
 class Gesture(Enum):
+    """
+    A gesture that can be performed by the user on a Nuimo controller.
+    """
     BUTTON_PRESS = 1
     BUTTON_RELEASE = 2
     SWIPE_LEFT = 3
@@ -336,7 +418,17 @@ class Gesture(Enum):
 
 
 class LedMatrix:
+    """
+    Represents an LED matrix to be displayed on a Nuimo controller.
+
+    :ivar leds: Boolean array with 81 values each representing the LEDs being on or off.
+    """
     def __init__(self, string):
+        """
+        Initializes an LED matrix with a string where each character represents one LED.
+
+        :param string: 81 character string: ' ' and '0' represent LED off, all other characters represent LED on.
+        """
         string = '{:<81}'.format(string[:81])
         self.leds = [c not in [' ', '0'] for c in string]
 
