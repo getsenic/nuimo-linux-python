@@ -62,6 +62,7 @@ class Controller(gatt.Device):
     def __init__(self, adapter_name, mac_address):
         super().__init__(adapter_name, mac_address)
         self.listener = None
+        self._matrix_writer = _LedMatrixWriter(controller=self)
 
     def connect(self):
         if self.listener:
@@ -113,28 +114,13 @@ class Controller(gatt.Device):
             self.listener.connected()
 
     def display_matrix(self, matrix, interval=2.0, brightness=1.0, fading=False, ignore_duplicates=False):
-        # TODO: Support ignore duplicate matrix writes
-        matrix_bytes = list(
-            map(lambda leds: functools.reduce(
-                lambda acc, led: acc + (1 << led if leds[led] else 0), range(0, len(leds)), 0),
-                [matrix.leds[i:i + 8] for i in range(0, 81, 8)]))
-
-
-        matrix_bytes += [max(0, min(255, int(brightness * 255.0))), max(0, min(255, int(interval * 10.0)))]
-
-        if fading:
-            matrix_bytes[10] ^= 1 << 4
-
-        nuimo_service = next((service for service in self.services if service.uuid == self.NUIMO_SERVICE_UUID), None)
-        matrix_characteristic = next((
-            characteristic for characteristic in nuimo_service.characteristics
-            if characteristic.uuid == self.LED_MATRIX_CHARACTERISTIC_UUID), None)
-        # TODO: Fallback to legacy led matrix service
-        # this is needed for older Nuimo firmware were the LED characteristic was a separate service)
-
-        # TODO: Support write requests without response
-        #       bluetoothd probably doesn't support selecting the request mode
-        matrix_characteristic.write_value(matrix_bytes)
+        self._matrix_writer.write(
+            matrix=matrix,
+            interval=interval,
+            brightness=brightness,
+            fading=fading,
+            ignore_duplicates=ignore_duplicates
+        )
 
     def characteristic_value_updated(self, characteristic, value):
         {
@@ -188,6 +174,36 @@ class Controller(gatt.Device):
     def notify_gesture_event(self, gesture, value=None):
         if self.listener:
             self.listener.received_gesture_event(GestureEvent(gesture=gesture, value=value))
+
+
+class _LedMatrixWriter():
+    def __init__(self, controller):
+        self.controller = controller
+
+    def write(self, matrix, interval, brightness, fading, ignore_duplicates):
+        # TODO: Support ignore duplicate matrix writes
+        matrix_bytes = list(
+            map(lambda leds: functools.reduce(
+                lambda acc, led: acc + (1 << led if leds[led] else 0), range(0, len(leds)), 0),
+                [matrix.leds[i:i + 8] for i in range(0, 81, 8)]))
+
+        matrix_bytes += [max(0, min(255, int(brightness * 255.0))), max(0, min(255, int(interval * 10.0)))]
+
+        if fading:
+            matrix_bytes[10] ^= 1 << 4
+
+        nuimo_service = next((
+            service for service in self.controller.services
+            if service.uuid == Controller.NUIMO_SERVICE_UUID), None)
+        matrix_characteristic = next((
+            characteristic for characteristic in nuimo_service.characteristics
+            if characteristic.uuid == Controller.LED_MATRIX_CHARACTERISTIC_UUID), None)
+        # TODO: Fallback to legacy led matrix service
+        # this is needed for older Nuimo firmware were the LED characteristic was a separate service)
+
+        # TODO: Support write requests without response
+        #       bluetoothd probably doesn't support selecting the request mode
+        matrix_characteristic.write_value(matrix_bytes)
 
 
 class ControllerListener:
