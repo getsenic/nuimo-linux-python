@@ -8,6 +8,12 @@ from . import errors
 
 
 class DeviceManager:
+    """
+    Entry point for managing BLE GATT devices.
+
+    This class is intended to be subclassed to manage a specific set of GATT devices.
+    """
+
     def __init__(self, adapter_name):
         self.listener = None
         self.adapter_name = adapter_name
@@ -34,8 +40,11 @@ class DeviceManager:
         self._properties_changed_signal = None
 
     def run(self):
-        """Starts the main loop that is necessary to receive Bluetooth events from the Bluetooth adapter.
-           This call blocks until you call `stop()` to stop the main loop."""
+        """
+        Starts the main loop that is necessary to receive Bluetooth events from the Bluetooth adapter.
+
+        This call blocks until you call `stop()` to stop the main loop.
+        """
 
         object_manager = dbus.Interface(self.bus.get_object("org.bluez", "/"), "org.freedesktop.DBus.ObjectManager")
         mac_addresses = list(filter(None.__ne__, [
@@ -66,8 +75,9 @@ class DeviceManager:
         self.mainloop.run()
 
     def stop(self):
-        """Stops the main loop started with `start()`"""
-
+        """
+        Stops the main loop started with `start()`
+        """
         if self._interface_added_signal is not None:
             self._interface_added_signal.remove()
         if self._properties_changed_signal is not None:
@@ -76,9 +86,18 @@ class DeviceManager:
         self.mainloop.quit()
 
     def devices(self):
+        """
+        Returns all known Bluetooth devices.
+        """
         return self._devices()[:]
 
     def start_discovery(self, service_uuids=[]):
+        """Starts a discovery for BLE devices with given service UUIDs.
+
+        Args:
+            service_uuids: Filters the search to only return devices with given UUIDs.
+        """
+
         filter = {'Transport': 'le'}
         if len(service_uuids) > 0:  # D-Bus doesn't like empty lists, needs to guess type
             filter['UUIDs'] = service_uuids
@@ -86,6 +105,9 @@ class DeviceManager:
         self.adapter.StartDiscovery()
 
     def stop_discovery(self):
+        """
+        Stops the discovery started with `start_discovery`
+        """
         pass
 
     def _interfaces_added(self, path, interfaces):
@@ -119,22 +141,37 @@ class DeviceManager:
         return match.group(1)[1:].replace('_', ':').lower()
 
     def make_device(self, mac_address):
-        """Makes and returns a `Device` instance.
-           Can be overridden to return a subclass instance of `Device`.
-           Can return `None` if specified device at mac address is not supported."""
+        """
+        Makes and returns a `Device` instance with specified MAC address.
+        
+        Override this method to return a specific subclass instance of `Device`.
+        Return `None` if the specified device shall not be supported by this class.
+        """
         return Device(adapter_name=self.adapter_name, mac_address=mac_address)
 
-    def create_device(self, mac_address):
+    def add_device(self, mac_address):
+        """
+        Adds a device with given MAC address without discovery.
+        """
         # TODO: Implement
         pass
 
     def remove_device(self, mac_address):
+        """
+        Removes a device with the given MAC address
+        """
         # TODO: Implement
         pass
 
 
 class Device:
     def __init__(self, adapter_name, mac_address):
+        """
+        Represents a BLE GATT device.
+
+        This class is intended to be sublcassed with a device-specific implementations
+        that reflect the device's GATT profile.
+        """
         self.mac_address = mac_address
         self.bus = dbus.SystemBus()
         self.object_manager = dbus.Interface(
@@ -155,13 +192,21 @@ class Device:
         self.properties_signal_match = self.properties.connect_to_signal('PropertiesChanged', self.properties_changed)
 
     def advertised(self):
-        """Called when an advertisement package has been received from the device. Requires device discovery to run."""
+        """
+        Called when an advertisement package has been received from the device. Requires device discovery to run.
+        """
 
     def invalidate(self):
+        """
+        Invalidates all properties and services.
+        """
         self.properties_signal_match.remove()
         self.invalidate_services()
 
     def invalidate_services(self):
+        """
+        Invalidates all services
+        """
         for service in self.services:
             service.invalidate()
 
@@ -174,10 +219,16 @@ class Device:
         return
 
     def connect(self):
+        """
+        Connects to the device. Blocks until the connection was successful.
+        """
         self._connect_retry_attempt = 0
         self._connect()
 
-    def connect_failed(self, e):
+    def connect_failed(self, error):
+        """
+        Called when the connection could not be established
+        """
         pass
 
     def _connect(self):
@@ -204,27 +255,46 @@ class Device:
                 self.connect_failed(e)
 
     def disconnect(self):
+        """
+        Disconnects from the device, if connected.
+        """
         self.object.Disconnect()
 
     def connected(self):
-        """Will be called when `connect()` has finished connecting to the device.
-           Will not be called if the device was already connected."""
+        """
+        Will be called when `connect()` has finished connecting to the device.
+        Will not be called if the device was already connected.
+        """
         pass
 
     def disconnected(self):
-        """Will be called when the device has disconnected"""
+        """
+        Will be called when the device has disconnected.
+        """
         pass
 
     def is_connected(self):
+        """
+        Returns `True` if the device is connected, otherwise `False`.
+        """
         return self.properties.Get('org.bluez.Device1', 'Connected') == 1
 
     def is_services_resolved(self):
+        """
+        Returns `True` is services are discovered, otherwise `False`.
+        """
         return self.properties.Get('org.bluez.Device1', 'ServicesResolved') == 1
 
     def alias(self):
+        """
+        Returns the device's alias (name).
+        """
         return self.properties.Get('org.bluez.Device1', 'Alias')
 
     def properties_changed(self, sender, changed_properties, invalidated_properties):
+        """
+        Called when a device property has changed or got invalidated.
+        """
         if 'Connected' in changed_properties:
             if changed_properties['Connected']:
                 self.connected()
@@ -235,6 +305,9 @@ class Device:
             self.services_resolved()
 
     def services_resolved(self):
+        """
+        Called when all device's services and characteristics got resolved.
+        """
         self.invalidate_services()
 
         services_regex = re.compile(self.device_path + '/service[0-9abcdef]{4}$')
@@ -247,19 +320,31 @@ class Device:
             uuid=service[1]['org.bluez.GattService1']['UUID']) for service in managed_services]
 
     def characteristic_value_updated(self, characteristic, value):
+        """
+        Called when a characteristic value has changed.
+        """
         # To be implemented by subclass
         pass
 
     def characteristic_write_value_succeeded(self, characteristic):
+        """
+        Called when a characteristic value write command succeeded.
+        """
         # To be implemented by subclass
         pass
 
     def characteristic_write_value_failed(self, characteristic, error):
+        """
+        Called when a characteristic value write command failed.
+        """
         # To be implemented by subclass
         pass
 
 
 class Service:
+    """
+    Represents a GATT service.
+    """
     def __init__(self, device, path, uuid):
         self.device = device
         self.path = path
@@ -271,13 +356,22 @@ class Service:
         self.characteristics_resolved()
 
     def invalidate(self):
+        """
+        Invalidates all found characteristics.
+        """
         self.invalidate_characteristics()
 
     def invalidate_characteristics(self):
+        """
+        Invalidates all found characteristics.
+        """
         for characteristic in self.characteristics:
             characteristic.invalidate()
 
     def characteristics_resolved(self):
+        """
+        Called when all service's characteristics got resolved.
+        """
         self.invalidate_characteristics()
 
         characteristics_regex = re.compile(self.path + '/char[0-9abcdef]{4}$')
@@ -291,6 +385,9 @@ class Service:
 
 
 class Characteristic:
+    """
+    Represents a GATT characteristic.
+    """
     def __init__(self, service, path, uuid):
         self.service = service
         self.path = path
@@ -302,14 +399,25 @@ class Characteristic:
         self.properties_signal = self.properties.connect_to_signal('PropertiesChanged', self.properties_changed)
 
     def invalidate(self):
+        """
+        Invalidates the characteristic.
+        """
         self.properties_signal.remove()
 
     def properties_changed(self, properties, changed_properties, invalidated_properties):
         value = changed_properties.get('Value')
+        """
+        Called when a Characteristic property has changed.
+        """
         if value is not None:
             self.service.device.characteristic_value_updated(characteristic=self, value=bytes(value))
 
     def write_value(self, bytes, offset=0):
+        """
+        Attempts to write a value to the characteristic.
+
+        Success or failure will be notified by calls to `write_value_succeeded` or `write_value_failed` respectively.
+        """
         bytes = [dbus.Byte(b) for b in bytes]
         self.object.WriteValue(
             bytes,
@@ -319,24 +427,42 @@ class Characteristic:
             dbus_interface='org.bluez.GattCharacteristic1')
 
     def write_value_succeeded(self):
+        """
+        Called when the write request has succeeded.
+        """
         self.service.device.characteristic_write_value_succeeded(self)
 
     def write_value_failed(self, error):
+        """
+        Called when the write request has failed.
+        """
         error = errors.InProgress() if error.get_dbus_name() == "org.bluez.Error.InProgress" else errors.Unknown()
         self.service.device.characteristic_write_value_failed(self, error)
 
     def enable_notifications(self):
+        """
+        Enables value change notifications.
+
+        Success or failure will be notified by calls to `enable_notifications_succeeded`
+        or `enable_notifications_failed` respectively.
+        """
         self.object.StartNotify(
             reply_handler=self.enable_notifications_succeeded,
             error_handler=self.enable_notifications_failed,
             dbus_interface='org.bluez.GattCharacteristic1')
 
     def enable_notifications_succeeded(self):
-        print('notification_enabling_succeeded')
+        """
+        Called when notification enabling has succeeded.
+        """
+        # TODO: Call `self.device.characteristic_enable_notification_succeeded`
+        pass
 
     def enable_notifications_failed(self, error):
+        """
+        Called when notification enabling has failed.
+        """
         if ((error.get_dbus_name() == 'org.bluez.Error.Failed') and
             (error.get_dbus_message() == "Already notifying")):
             return
-        print('notification_enabling_failed', error)
-
+        # TODO: Call `self.device.characteristic_enable_notification_failed`
