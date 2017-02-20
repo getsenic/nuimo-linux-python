@@ -1,5 +1,7 @@
 import functools
+import datetime
 import gatt
+from datetime import datetime
 from enum import Enum
 
 
@@ -131,10 +133,12 @@ class Controller(gatt.Device):
         }[characteristic.uuid](value)
 
     def characteristic_write_value_succeeded(self, characteristic):
-        print("characteristic_write_value_succeeded")
+        if characteristic.uuid == self.LED_MATRIX_CHARACTERISTIC_UUID:
+            self._matrix_writer.write_succeeded()
 
     def characteristic_write_value_failed(self, characteristic, error):
-        print("characteristic_write_value_failed", error)
+        if characteristic.uuid == self.LED_MATRIX_CHARACTERISTIC_UUID:
+            self._matrix_writer.write_failed(error)
 
     def notify_button_event(self, value):
         self.notify_gesture_event(gesture=Gesture.BUTTON_RELEASE if value[0] == 0 else Gesture.BUTTON_PRESS)
@@ -179,19 +183,62 @@ class Controller(gatt.Device):
 class _LedMatrixWriter():
     def __init__(self, controller):
         self.controller = controller
+        self.last_written_matrix = None
+        self.last_written_matrix_interval = 0
+        self.last_written_matrix_date = datetime.utcfromtimestamp(0)
+        self.matrix = None
+        self.interval = 0
+        self.brightness = 0
+        self.fading = False
+        self.is_waiting_for_response = False
+        self.write_on_response = True
 
     def write(self, matrix, interval, brightness, fading, ignore_duplicates):
-        # TODO: Support ignore duplicate matrix writes
+        if (ignore_duplicates and
+            (self.last_written_matrix is not None) and
+            (self.last_written_matrix == matrix) and
+            ((self.last_written_matrix_interval <= 0) or
+             (datetime.now() - self.last_written_matrix_date).total_seconds() < self.last_written_matrix_interval)):
+            return
+
+        self.matrix = matrix
+        self.interval = interval
+        self.brightness = brightness
+        self.fading = fading
+
+        if (self.is_waiting_for_response and
+            (datetime.now() - self.last_written_matrix_date).total_seconds() < 1.0):
+            self.write_on_response = True
+        else:
+            self.write_now()
+
+    def write_now(self):
+        if not self.controller.is_connected():
+            return
+
         matrix_bytes = list(
             map(lambda leds: functools.reduce(
                 lambda acc, led: acc + (1 << led if leds[led] else 0), range(0, len(leds)), 0),
-                [matrix.leds[i:i + 8] for i in range(0, 81, 8)]))
+                [self.matrix.leds[i:i + 8] for i in range(0, 81, 8)]))
 
-        matrix_bytes += [max(0, min(255, int(brightness * 255.0))), max(0, min(255, int(interval * 10.0)))]
+        matrix_bytes += [
+            max(0, min(255, int(self.brightness * 255.0))),
+            max(0, min(255, int(self.interval * 10.0)))]
 
-        if fading:
+        if self.fading:
             matrix_bytes[10] ^= 1 << 4
 
+        # TODO: Support write requests without response
+        #       bluetoothd probably doesn't support selecting the request mode
+        self.is_waiting_for_response = True
+        self.led_matrix_characteristic().write_value(matrix_bytes)
+
+        self.last_written_matrix = self.matrix
+        self.last_written_matrix_date = datetime.now()
+        self.last_written_matrix_interval = self.interval
+
+    def led_matrix_characteristic(self):
+        # TODO: Controller should assign the characteristic and we test for None only
         nuimo_service = next((
             service for service in self.controller.services
             if service.uuid == Controller.NUIMO_SERVICE_UUID), None)
@@ -200,10 +247,16 @@ class _LedMatrixWriter():
             if characteristic.uuid == Controller.LED_MATRIX_CHARACTERISTIC_UUID), None)
         # TODO: Fallback to legacy led matrix service
         # this is needed for older Nuimo firmware were the LED characteristic was a separate service)
+        return matrix_characteristic
 
-        # TODO: Support write requests without response
-        #       bluetoothd probably doesn't support selecting the request mode
-        matrix_characteristic.write_value(matrix_bytes)
+    def write_succeeded(self):
+        self.is_waiting_for_response = False
+        if self.write_on_response:
+            self.write_on_response = False
+            self.write_now()
+
+    def write_failed(self, error):
+        self.is_waiting_for_response = False
 
 
 class ControllerListener:
@@ -286,3 +339,9 @@ class LedMatrix:
     def __init__(self, string):
         string = '{:<81}'.format(string[:81])
         self.leds = [c not in [' ', '0'] for c in string]
+
+    def __eq__(self, other):
+        return (other is not None) and (self.leds == other.leds)
+
+    def __ne__(self, other):
+        return not self == other
