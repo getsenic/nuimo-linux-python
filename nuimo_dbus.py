@@ -1,5 +1,4 @@
 import functools
-import datetime
 import gatt
 from datetime import datetime
 from enum import Enum
