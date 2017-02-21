@@ -1,95 +1,136 @@
 # Nuimo Python SDK
+[Nuimo](https://senic.com) is a universal smart device controller made by [Senic](https://senic.com).
 
-The **Nuimo** SDK is a single Python source file.  It has been tested with Python 2.7 and Python 3.4.
+The Nuimo Python SDK for Linux allows you to integrate your Nuimo(s) into any type of Linux application or script that can execute Python code.
+
+## Prerequisites
+The Nuimo SDK requires [Python 3](https://www.python.org) and a recent installation of [BlueZ](http://www.bluez.org/). It is tested to work fine with BlueZ 5.43, slightly older versions should however work, too.
 
 ## Installation
 These instructions assume a Debian-based Linux.
 
-1. `git clone https://github.com/getsenic/nuimo-linux-python`
-2. `cd nuimo-linux-python`
+On Linux the [Bluez](http://www.bluez.org/) library is necessary to access your built-in Bluetooth controller or Bluetooth USB dongle. Some Linux distributions provide a more up-to-date BlueZ package, some other distributions only install older versions that don't implement all Bluetooth features needed for this SDK. In those cases you want to either update BlueY or build it from sources.
 
-The remainder of these instructions assume `nuimo-linux-python` is the current directory.
+### Updating/installing BlueZ via apt-get
 
-For convenience, the following groups of commands are included in a shell script **examples/install.sh**
+1. `bluetoothd --version` Obtains the version of the pre-installed BlueZ. `bluetoothd` daemon must run at startup expose the Bluetooth API via D-Bus.
+2. `sudo apt-get install --no-install-recommends bluetooth` Installs BlueZ
+3. If the installed version is too old, proceed with next step: [Installing BlueZ from sources](#installing-bluez-from-sources)
 
+### Installing BlueZ from sources
 
-### 1. Install bluez (Linux)
+The following commands download BlueZ 5.43 sources and built them into `/usr/local`. It's not suggested to remove any pre-installed BlueZ package as its deinstallation might remove necessary Bluetooth drivers as well.
 
-On Linux the [Bluez](http://www.bluez.org/) library is necessary to access your inbuilt Bluetooth controller or Bluetooth USB dongle.
-If you are using a Raspberry Pi, the Bluez library is pre-installed in Raspian Jessie. The Raspberry Pi 3 comes with Bluetooth Controller hardware. 
+1. `sudo servicectl stop blutooth`
+2. `cd ~`
+3. `mkdir bluez`
+4. `cd bluey`
+5. `wget http://www.kernel.org/pub/linux/bluetooth/bluez-5.43.tar.xz`
+6. `tar xf bluez-{{bluez_version}}.tar.xz`
+7. `./configure --disable-cups --disable-monitor`
+8. `make`
+9. `sudo make install`
+10. `sudo servicectl start bluetooth`
 
-1. `bluetoothd --version` (Shows the version of the pre-installed bluez. **bluetoothd** daemon must run at startup to use Bluez)
-2. `sudo apt-get install --no-install-recommends bluetooth` (Installs Bluez)
+### Enabling your Bluetooth adapter
 
-**or**
-```
-sh examples/install.sh install
-```
-#### Using bluez commandline tools 
-Bluez also provides commandline tools such as **hciconfig, hcitool, bluetoothctl** to interact with Bluetooth devices.
-**bluetoothctl** was introduced in Bluez version 5.0 but many Linux distributions are still using Bluez 4.x.
+1. `sudo hciconfig hci0 up` Enables your built-in Bluetooth adapter or external Bluetooth USB dongle
 
-1. `sudo hciconfig hci0 up` (Enables your Bluetooth dongle)
-2. `sudo hcitool lescan` (Should discover your Nuimo, press Ctrl+C to stop discovery)
-3. `bluetoothctl devices` (Lists the previously paired peripherals)
+### Using BlueZ commandline tools
+BlueZ also provides an interactive commandline tool to interact with Bluetooth devices. You know that your BlueZ installation is working fine if it discovers any Bluetooth devices nearby.
 
-**or**
-```
-sh examples/install.sh scan
-```
-#### Manually connect to Nuimo with bluez (optional, skip this step if you are not interested)
+`sudo bluetoothctl` Starts an interactive mode to talk to BlueZ
+  * `power on` Enables the Bluetooth adapter
+  * `scan on` Start Bluetooth device scanning and lists all found devices with MAC addresses
+  * `connect AA:BB:CC:DD:EE:FF` Connects to a Nuimo controller with specified MAC address
+  * `exit` Quits the interactive mode
 
-1. `sudo hcitool lescan | grep Nuimo` (Copy your Nuimo's MAC address and press Ctrl+C to stop discovery)
-2. `gatttool -b FA:48:12:00:CA:AC -t random -I` (Replace the MAC address with the address from step 1)
-3. `connect` (Should successfully connect to Nuimo)
-4. `characteristics` (Displays [Nuimo's GATT characteristics](https://senic.com/files/nuimo-gatt-profile.pdf))
-5. Look for uuid `F29B1529-...` (button press characteristic) and note its `char value handle` (2nd column). Here: `001d`.
-6. Add `1` to the handle. Here: `001d + 1 = 001e` (Hexadecimal value representation; [use a calculator if necessary](http://www.miniwebtool.com/hex-calculator/?number1=001d&operate=1&number2=1))
-7. `char-write-req 001e 0100` (Registers for button click events; replace `001e` with the handle from step 6)
-8. Hold Nuimo's click button pressed and release it. `gatttool` should now notify all button press events.
-8. `exit` to leave `gatttool`
+### Installing Nuimo Python SDK
 
-**or**
-```
-sh examples/install.sh connect
-```
+To install Nuimo module globally, type:
 
-### 2. Install Nuimo Python SDK
+`pip3 install nuimo`
 
-#### Install the system dependencies
+#### Running the Nuimo control script
 
-    sudo apt-get install build-essential pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev python-setuptools`
+To test if your setup is working, run the following command. Note that it must be run as root because on Linux, Bluetooth discovery is a restricted operation.
 
-#### Install Nuimo SDK & it's Python dependencies
+`sudo python3 nuimoctl.py --discover`
+`sudo python3 nuimoctl.py --connect AA:BB:CC:DD:EE:FF` (Replace the MAC address with your Nuimo's MAC address)
 
-If you're using Python 2.X run:
+## SDK Usage
 
-    sudo python setup.py install
+### Discovering nearby Nuimo controllers
 
-If you're using Python 3.X run:
+The SDK entry point is the `ControllerManager` class. Check the following example to dicover any Nuimo controller nearby.
 
-    sudo python3 setup.py install
+Please note that communication with your Bluetooth adapter happens over BlueZ's D-Bus API, hence an event loop needs to be run in order to receive all Bluetooth related events. You can start and stop the event loop via `run()` and `stop()` calls to your `ControllerManager` instance.
 
-This will install Nuimo SDK package and it's dependency Gattlib (see
-note about Gattlib below) to Python package directory.
-
-#### Running the example script
-
-To test if your setup is working, run the following command (note that it must be run as root because on Linux, Bluetooth discovery is a restricted operation).
 
 ```
-sudo python examples/test.py
+import nuimo
+
+class ControllerManagerPrintListener(nuimo.ControllerManagerListener):
+    def controller_discovered(self, controller):
+        print("Discovered Nuimo controller", controller.mac_address)
+
+manager = nuimo.ControllerManager(adapter_name='hci0')
+manager.listener = nuimo.ControllerManagerPrintListener()
+manager.start_discovery()
+manager.run()
+
 ```
 
-You can find the example script here: [examples/test.py](/examples/test.py)
- 
-#### Tested on
-1. Raspberry Pi Model 3 - Raspbian Jessie Full (raspberrypi 4.1.18)
-2. Linux Mint 17.3 Rosa
+### Connecting to a Nuimo controller and receiving user input events
 
-### Note about Pygattlib
-[Pygattlib](https://bitbucket.org/OscarAcena/pygattlib) is a Python library to use the GATT Protocol for Bluetooth LE devices. It is a wrapper around the implementation used by gatttool in the bluez package. Unlike some other Python Bluetooth libraries, Pygattlib does not need invoke any external programs.
+Once `ControllerManager` has discovered a Nuimo controller you can use the `controller` object that you retrieved from `ControllerManagerListener.controller_discovered()` to connect to it. Alternatively you can create a new instance of `Controller` using the name of your Bluetooth adapter (typically `hci0`) and Nuimo's MAC address.
 
-**Known Issues**
-Pygattlib may not be reliable on your platform.  We are investigating these issues at Senic.
-1. The library sometimes appears to get 'stuck', especially when executing `discover_characteristics`.
+Make sure to assign a `ControllerListener` object to the `listener` attribute of your controller instance. It will notify you about all Nuimo controller related events such connection, disconnection and user input events.
+
+The following example connects to a Nuimo controller and uses the predefined `ControllerPrintListener` class to print all controller events:
+
+```
+import nuimo
+
+controller = nuimo.Controller(adapter_name='hci0', mac_address="AA:BB:CC:DD:EE:FF")
+controller.listener = nuimo.ControllerPrintListener(controller=controller)
+controller.connect()
+
+manager = ControllerManager(adapter_name="hci0")
+manager.run()
+
+```
+
+As with Nuimo controller discovery, remember to start the Bluetooth event loop with `ControllerManager.run()`. Please make sure to use the same `ControllerManager` for starting and stopping the event loop.
+
+### Write to Nuimo's LED matrix
+
+Once a Nuimo controller is connected you can send an LED matrix to its display. Therefor create an `LedMatrix` object by initializing it with a string. That string should contain 81 characters: each character, starting from top left corner, tells whether the corresponding LED should be on or off. The following example shows a cross:
+
+```
+matrix = nuimo.LedMatrix(
+    "*       *"
+    " *     * "
+    "  *   *  "
+    "   * *   "
+    "    *    "
+    "   * *   "
+    "  *   *  "
+    " *     * "
+    "*       *"
+)
+controller.display_matrix(matrix)
+
+```
+
+## Support
+
+Please open an issue or drop us an email to [developers@senic.com](mailto:developers@senic.com).
+
+## Contributing
+
+Contributions are welcome via pull requests. Please open an issue first in case you want to discus your possible improvements to this SDK.
+
+## License
+
+The Nuimo Python SDK is available under the MIT License.
