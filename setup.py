@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-	name='nuimo',
+    name='nuimo',
     version='0.1.0',
     description='Nuimo SDK for Python on Linux',
     url='https://github.com/getsenic/nuimo-linux-python',
