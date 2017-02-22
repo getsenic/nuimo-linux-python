@@ -148,11 +148,6 @@ class Controller(gatt.Device):
     def services_resolved(self):
         super().services_resolved()
 
-        for service in self.services:
-            print(service.path, service.uuid)
-            for characteristic in service.characteristics:
-                print("   ", characteristic.path, characteristic.uuid)
-
         nuimo_service = next(service for service in self.services if service.uuid == self.NUIMO_SERVICE_UUID)
         if nuimo_service is None:
             if self.listener:
