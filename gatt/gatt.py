@@ -47,10 +47,10 @@ class DeviceManager:
         """
 
         object_manager = dbus.Interface(self.bus.get_object("org.bluez", "/"), "org.freedesktop.DBus.ObjectManager")
-        mac_addresses = list(filter(None.__ne__, [
-            self._mac_address(path)
-            for path, _ in object_manager.GetManagedObjects().items()
-        ]))
+        mac_addresses = [
+            mac_address
+            for mac_address in [self._mac_address(path) for path, _ in object_manager.GetManagedObjects().items()]
+            if mac_address is not None]
         for mac_address in mac_addresses:
             if self._devices.get(mac_address, None) is not None:
                 continue
@@ -143,7 +143,7 @@ class DeviceManager:
     def make_device(self, mac_address):
         """
         Makes and returns a `Device` instance with specified MAC address.
-        
+
         Override this method to return a specific subclass instance of `Device`.
         Return `None` if the specified device shall not be supported by this class.
         """
