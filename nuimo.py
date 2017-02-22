@@ -348,35 +348,6 @@ class ControllerListener:
         pass
 
 
-class ControllerPrintListener(ControllerListener):
-    """
-    An implementation of ``ControllerListener`` that prints each event.
-    """
-    def __init__(self, controller):
-        self.controller = controller
-
-    def started_connecting(self):
-        self.print("connecting...")
-
-    def connected(self):
-        self.print("connected")
-
-    def connect_failed(self, error):
-        self.print("connect failed: " + str(error))
-
-    def started_disconnecting(self):
-        self.print("disconnecting...")
-
-    def disconnected(self):
-        self.print("disconnected")
-
-    def received_gesture_event(self, event):
-        self.print("did send gesture event " + str(event))
-
-    def print(self, string):
-        print("Nuimo controller " + self.controller.mac_address + " " + string)
-
-
 class GestureEvent:
     """
     A gesture event as it can be received from a Nuimo controller.
