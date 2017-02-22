@@ -406,4 +406,4 @@ class LedMatrix:
         return (other is not None) and (self.leds == other.leds)
 
     def __ne__(self, other):
-        return not self == other
+        return not (self == other)
