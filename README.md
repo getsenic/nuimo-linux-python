@@ -21,16 +21,17 @@ On Linux the [Bluez](http://www.bluez.org/) library is necessary to access your 
 
 The following commands download BlueZ 5.43 sources and built them into `/usr/local`. It's not suggested to remove any pre-installed BlueZ package as its deinstallation might remove necessary Bluetooth drivers as well.
 
-1. `sudo servicectl stop blutooth`
-2. `cd ~`
-3. `mkdir bluez`
-4. `cd bluey`
-5. `wget http://www.kernel.org/pub/linux/bluetooth/bluez-5.43.tar.xz`
-6. `tar xf bluez-{{bluez_version}}.tar.xz`
-7. `./configure --disable-cups --disable-monitor`
-8. `make`
-9. `sudo make install`
-10. `sudo servicectl start bluetooth`
+1. `sudo servicectl stop bluetooth`
+2. `apt-get install libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev libdbus-glib-1-dev unzip`
+3. `cd ~`
+4. `mkdir bluez`
+5. `cd bluez`
+6. `wget http://www.kernel.org/pub/linux/bluetooth/bluez-5.43.tar.xz`
+7. `tar xf bluez-{{bluez_version}}.tar.xz`
+8. `./configure --disable-cups --disable-monitor`
+9. `make`
+10. `sudo make install`
+11. `sudo servicectl start bluetooth`
 
 ### Enabling your Bluetooth adapter
 
@@ -47,9 +48,10 @@ BlueZ also provides an interactive commandline tool to interact with Bluetooth d
 
 ### Installing Nuimo Python SDK
 
-To install Nuimo module globally, type:
+To install Nuimo module and the Python3 D-Bus dependency globally, run:
 
 `pip3 install nuimo`
+`apt-get install python3-dbus`
 
 #### Running the Nuimo control script
 
