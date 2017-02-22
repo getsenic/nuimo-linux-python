@@ -412,13 +412,16 @@ class Characteristic:
         if value is not None:
             self.service.device.characteristic_value_updated(characteristic=self, value=bytes(value))
 
-    def write_value(self, bytes, offset=0):
+    def write_value(self, value, offset=0):
         """
         Attempts to write a value to the characteristic.
 
         Success or failure will be notified by calls to `write_value_succeeded` or `write_value_failed` respectively.
+
+        :param value: array of bytes to be written
+        :param offset: offset from where to start writing the bytes (defaults to 0)
         """
-        bytes = [dbus.Byte(b) for b in bytes]
+        bytes = [dbus.Byte(b) for b in value]
         self.object.WriteValue(
             bytes,
             {'offset': dbus.Byte(offset, variant_level=1)},
