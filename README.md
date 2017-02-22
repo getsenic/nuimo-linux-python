@@ -4,7 +4,7 @@
 The Nuimo Python SDK for Linux allows you to integrate your Nuimo(s) into any type of Linux application or script that can execute Python code.
 
 ## Prerequisites
-The Nuimo SDK requires [Python 3.5+](https://www.python.org) and a recent installation of [BlueZ](http://www.bluez.org/). It is tested to work fine with BlueZ 5.43, slightly older versions should however work, too.
+The Nuimo SDK requires [Python 3.4+](https://www.python.org) and a recent installation of [BlueZ](http://www.bluez.org/). It is tested to work fine with BlueZ 5.43, slightly older versions should however work, too.
 
 ## Installation
 These instructions assume a Debian-based Linux.
@@ -23,7 +23,7 @@ The following commands download BlueZ 5.43 sources and built them into `/usr/loc
 
 1. `sudo systemctl stop bluetooth`
 2. `apt-get install libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev libdbus-glib-1-dev unzip`
-3. `cd ~`
+3. `cd`
 4. `mkdir bluez`
 5. `cd bluez`
 6. `wget http://www.kernel.org/pub/linux/bluetooth/bluez-5.43.tar.xz`
