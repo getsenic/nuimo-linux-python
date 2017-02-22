@@ -8,4 +8,8 @@ setup(
     maintainer='Senic GmbH',
     maintainer_email='developers@senic.com',
     license='MIT',
-    modules=['nuimo', 'gatt'])
+    modules=['nuimo', 'gatt'],
+    entry_points="""
+        [console_scripts]
+        nuimoctl = nuimoctl:main
+    """)

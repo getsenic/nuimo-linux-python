@@ -77,6 +77,9 @@ class ControllerManagerPrintListener(nuimo.ControllerManagerListener):
 
 
 if __name__ == '__main__':
+    main()
+
+def main():
     arg_parser = ArgumentParser(description="Nuimo Controller Demo")
     arg_parser.add_argument(
         '--adapter',
