@@ -172,6 +172,10 @@ class Controller(gatt.Device):
             characteristic = next((
                 characteristic for characteristic in nuimo_service.characteristics
                 if characteristic.uuid == characteristic_uuid), None)
+            if characteristic is None:
+                # TODO: Use proper exception subclass
+                self.listener.connect_failed(Exception("Nuimo GATT characteristic " + characteristic_uuid + " missing"))
+                return
             characteristic.enable_notifications()
 
         # TODO: Only fire `connected` when we read the firmware version or battery value as in other SDKs
