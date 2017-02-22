@@ -99,7 +99,7 @@ class DeviceManager:
         """
 
         discovery_filter = {'Transport': 'le'}
-        if len(service_uuids) > 0:  # D-Bus doesn't like empty lists, needs to guess type
+        if service_uuids:  # D-Bus doesn't like empty lists, it needs to guess the type
             discovery_filter['UUIDs'] = service_uuids
         self.adapter.SetDiscoveryFilter(discovery_filter)
         self.adapter.StartDiscovery()
