@@ -7,6 +7,12 @@ from gi.repository import GObject
 from . import errors
 
 
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+dbus.mainloop.glib.threads_init()
+
+_MAIN_LOOP = GObject.MainLoop()
+
+
 class DeviceManager:
     """
     Entry point for managing BLE GATT devices.
@@ -18,10 +24,6 @@ class DeviceManager:
         self.listener = None
         self.adapter_name = adapter_name
 
-        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-        dbus.mainloop.glib.threads_init()
-
-        self.mainloop = GObject.MainLoop()
         self.bus = dbus.SystemBus()
 
         try:
@@ -72,7 +74,7 @@ class DeviceManager:
             arg0='org.bluez.Device1',
             path_keyword='path')
 
-        self.mainloop.run()
+        _MAIN_LOOP.run()
 
     def stop(self):
         """
@@ -83,7 +85,7 @@ class DeviceManager:
         if self._properties_changed_signal is not None:
             self._properties_changed_signal.remove()
 
-        self.mainloop.quit()
+        _MAIN_LOOP.quit()
 
     def devices(self):
         """
