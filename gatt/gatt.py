@@ -435,11 +435,15 @@ class Characteristic:
         """
         self.service.device.characteristic_write_value_succeeded(self)
 
-    def write_value_failed(self, error):
+    def write_value_failed(self, dbus_error):
         """
         Called when the write request has failed.
         """
-        error = errors.InProgress() if error.get_dbus_name() == "org.bluez.Error.InProgress" else errors.Unknown()
+        if dbus_error.get_dbus_name() == "org.bluez.Error.InProgress":
+            error = errors.InProgress()
+        else:
+            error = errors.Unknown()
+
         self.service.device.characteristic_write_value_failed(self, error)
 
     def enable_notifications(self):
