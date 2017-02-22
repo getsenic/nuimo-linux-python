@@ -19,6 +19,8 @@ class DeviceManager:
         self.adapter_name = adapter_name
 
         dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        dbus.mainloop.glib.threads_init()
+
         self.mainloop = GObject.MainLoop()
         self.bus = dbus.SystemBus()
 
