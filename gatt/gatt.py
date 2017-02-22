@@ -49,10 +49,8 @@ class DeviceManager:
         """
 
         object_manager = dbus.Interface(self.bus.get_object("org.bluez", "/"), "org.freedesktop.DBus.ObjectManager")
-        mac_addresses = [
-            mac_address
-            for mac_address in [self._mac_address(path) for path, _ in object_manager.GetManagedObjects().items()]
-            if mac_address is not None]
+        possible_mac_addresses = [self._mac_address(path) for path, _ in object_manager.GetManagedObjects().items()]
+        mac_addresses = [mac_address for mac_address in possible_mac_addresses if mac_address is not None]
         for mac_address in mac_addresses:
             if self._devices.get(mac_address, None) is not None:
                 continue
