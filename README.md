@@ -4,12 +4,12 @@
 The Nuimo Python SDK for Linux allows you to integrate your Nuimo(s) into any type of Linux application or script that can execute Python code.
 
 ## Prerequisites
-The Nuimo SDK requires [Python 3](https://www.python.org) and a recent installation of [BlueZ](http://www.bluez.org/). It is tested to work fine with BlueZ 5.43, slightly older versions should however work, too.
+The Nuimo SDK requires [Python 3.5+](https://www.python.org) and a recent installation of [BlueZ](http://www.bluez.org/). It is tested to work fine with BlueZ 5.43, slightly older versions should however work, too.
 
 ## Installation
 These instructions assume a Debian-based Linux.
 
-On Linux the [Bluez](http://www.bluez.org/) library is necessary to access your built-in Bluetooth controller or Bluetooth USB dongle. Some Linux distributions provide a more up-to-date BlueZ package, some other distributions only install older versions that don't implement all Bluetooth features needed for this SDK. In those cases you want to either update BlueY or build it from sources.
+On Linux the [BlueZ](http://www.bluez.org/) library is necessary to access your built-in Bluetooth controller or Bluetooth USB dongle. Some Linux distributions provide a more up-to-date BlueZ package, some other distributions only install older versions that don't implement all Bluetooth features needed for this SDK. In those cases you want to either update BlueZ or build it from sources.
 
 ### Updating/installing BlueZ via apt-get
 
@@ -21,17 +21,17 @@ On Linux the [Bluez](http://www.bluez.org/) library is necessary to access your 
 
 The following commands download BlueZ 5.43 sources and built them into `/usr/local`. It's not suggested to remove any pre-installed BlueZ package as its deinstallation might remove necessary Bluetooth drivers as well.
 
-1. `sudo servicectl stop bluetooth`
+1. `sudo systemctl stop bluetooth`
 2. `apt-get install libusb-dev libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev libdbus-glib-1-dev unzip`
 3. `cd ~`
 4. `mkdir bluez`
 5. `cd bluez`
 6. `wget http://www.kernel.org/pub/linux/bluetooth/bluez-5.43.tar.xz`
-7. `tar xf bluez-{{bluez_version}}.tar.xz`
+7. `tar xf bluez-5.43.tar.xz`
 8. `./configure --disable-cups --disable-monitor`
 9. `make`
 10. `sudo make install`
-11. `sudo servicectl start bluetooth`
+11. `sudo systemctl start bluetooth`
 
 ### Enabling your Bluetooth adapter
 
