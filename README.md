@@ -19,7 +19,7 @@ On Linux the [BlueZ](http://www.bluez.org/) library is necessary to access your 
 
 ### Installing BlueZ from sources
 
-The following commands download BlueZ 5.43 sources and built them into `/usr/local`. It's not suggested to remove any pre-installed BlueZ package as its deinstallation might remove necessary Bluetooth drivers as well.
+The `bluetoothd` daemon provides BlueZ's D-Bus interfaces that is accessed by the Nuimo SDK to communicate with Nuimo Bluetooth controllers. The following commands download BlueZ 5.43 sources, built them and replace any pre-installed `bluetoothd` daemon. It's not suggested to remove any pre-installed BlueZ package as its deinstallation might remove necessary Bluetooth drivers as well.
 
 1. `sudo systemctl stop bluetooth`
 2. `sudo apt-get update`
@@ -30,11 +30,17 @@ The following commands download BlueZ 5.43 sources and built them into `/usr/loc
 7. `wget http://www.kernel.org/pub/linux/bluetooth/bluez-5.43.tar.xz`
 8. `tar xf bluez-5.43.tar.xz`
 9. `cd bluez-5.43`
-10. `./configure`
+10. `./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-library`
 11. `make`
 12. `sudo make install`
-13. `sudo systemctl daemon-reload`
-14. `sudo systemctl start bluetooth`
+13. `sudo ln -svf /usr/libexec/bluetooth/bluetoothd /usr/sbin/`
+14. `sudo install -v -dm755 /etc/bluetooth`
+15. `sudo install -v -m644 src/main.conf /etc/bluetooth/main.conf`
+16. `sudo systemctl daemon-reload`
+17. `sudo systemctl start bluetooth`
+18. `bluetoothd --version # should now print 5.43
+
+Please note that some distributions might use a different directory for system deamons, apply step 13 only as needed.
 
 ### Enabling your Bluetooth adapter
 
