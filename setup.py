@@ -8,5 +8,5 @@ setup(
     maintainer='Senic GmbH',
     maintainer_email='developers@senic.com',
     license='MIT',
-    install_requires=['dbus-python'],
-    py_modules=['nuimo'])
+    py_modules=['nuimo'],
+    modules=['gatt'])
