@@ -233,7 +233,7 @@ class Controller(gatt.Device):
             9:  Gesture.LONGTOUCH_RIGHT,
             10: Gesture.LONGTOUCH_TOP,
             11: Gesture.LONGTOUCH_BOTTOM
-        }[value[0]]
+        }.get(value[0])
         if gesture is not None:
             self._notify_gesture_event(gesture=gesture)
 
