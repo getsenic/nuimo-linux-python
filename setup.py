@@ -8,5 +8,4 @@ setup(
     maintainer='Senic GmbH',
     maintainer_email='developers@senic.com',
     license='MIT',
-    py_modules=['nuimo'],
-    modules=['gatt'])
+    modules=['nuimo', 'gatt'])
