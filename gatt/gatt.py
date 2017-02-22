@@ -98,10 +98,10 @@ class DeviceManager:
             service_uuids: Filters the search to only return devices with given UUIDs.
         """
 
-        filter = {'Transport': 'le'}
+        discovery_filter = {'Transport': 'le'}
         if len(service_uuids) > 0:  # D-Bus doesn't like empty lists, needs to guess type
-            filter['UUIDs'] = service_uuids
-        self.adapter.SetDiscoveryFilter(filter)
+            discovery_filter['UUIDs'] = service_uuids
+        self.adapter.SetDiscoveryFilter(discovery_filter)
         self.adapter.StartDiscovery()
 
     def stop_discovery(self):
