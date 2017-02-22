@@ -148,11 +148,11 @@ class Controller(gatt.Device):
     def services_resolved(self):
         super().services_resolved()
 
-        nuimo_service = next(service for service in self.services if service.uuid == self.NUIMO_SERVICE_UUID)
+        nuimo_service = next((service for service in self.services if service.uuid == self.NUIMO_SERVICE_UUID), None)
         if nuimo_service is None:
             if self.listener:
                 # TODO: Use proper exception subclass
-                self.listener.connect_failed(Exception("Nuimo GATT service is missing"))
+                self.listener.connect_failed(Exception("Nuimo GATT service missing"))
             return
 
         self._matrix_writer.led_matrix_characteristic = next((
