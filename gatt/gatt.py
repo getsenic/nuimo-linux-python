@@ -30,10 +30,7 @@ class DeviceManager:
             adapter_object = self.bus.get_object('org.bluez', '/org/bluez/' + adapter_name)
         except dbus.exceptions.DBusException as e:
             # TODO: Use custom exception type
-            raise Exception(
-                "Cannot initialize Bluetooth adapter: " +
-                e.get_dbus_name() + ": " +
-                e.get_dbus_message()) from e
+            raise errors.Failed("Failed initializing Bluetooth adapter:" + e.get_dbus_message()) from e
 
         self.adapter = dbus.Interface(adapter_object, 'org.bluez.Adapter1')
         self.device_path_regex = re.compile('^/org/bluez/' + adapter_name + '/dev((_[A-Z0-9]{2}){6})$')
