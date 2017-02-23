@@ -76,9 +76,6 @@ class ControllerManagerPrintListener(nuimo.ControllerManagerListener):
         print("Discovered Nuimo controller", controller.mac_address)
 
 
-if __name__ == '__main__':
-    main()
-
 def main():
     arg_parser = ArgumentParser(description="Nuimo Controller Demo")
     arg_parser.add_argument(
@@ -128,3 +125,7 @@ def main():
         controller.disconnect()
 
     controller_manager.run()
+
+
+if __name__ == '__main__':
+    main()
