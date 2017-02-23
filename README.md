@@ -38,7 +38,7 @@ The `bluetoothd` daemon provides BlueZ's D-Bus interfaces that is accessed by th
 15. `sudo install -v -m644 src/main.conf /etc/bluetooth/main.conf`
 16. `sudo systemctl daemon-reload`
 17. `sudo systemctl start bluetooth`
-18. `bluetoothd --version # should now print 5.43
+18. `bluetoothd --version` # should now print 5.43
 
 Please note that some distributions might use a different directory for system deamons, apply step 13 only as needed.
 
