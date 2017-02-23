@@ -255,9 +255,9 @@ class Device:
             elif (e.get_dbus_name() == 'org.freedesktop.DBus.Error.NoReply'):
                 # TODO: How to handle properly?
                 # Reproducable when we repeatedly shut off Nuimo immediately after its flashing Bluetooth icon appears
-                self.connect_failed(e)
+                self.connect_failed(errors.Failed(e.get_dbus_message()))
             else:
-                self.connect_failed(e)
+                self.connect_failed(errors.Failed(e.get_dbus_message()))
 
     def disconnect(self):
         """
