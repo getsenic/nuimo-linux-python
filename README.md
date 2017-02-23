@@ -13,7 +13,7 @@ On Linux the [BlueZ](http://www.bluez.org/) library is necessary to access your 
 
 ### Updating/installing BlueZ via apt-get
 
-1. `bluetoothd --version` Obtains the version of the pre-installed BlueZ. `bluetoothd` daemon must run at startup expose the Bluetooth API via D-Bus.
+1. `bluetoothd --version` Obtains the version of the pre-installed BlueZ. `bluetoothd` daemon must run at startup to expose the Bluetooth API via D-Bus.
 2. `sudo apt-get install --no-install-recommends bluetooth` Installs BlueZ
 3. If the installed version is too old, proceed with next step: [Installing BlueZ from sources](#installing-bluez-from-sources)
 
