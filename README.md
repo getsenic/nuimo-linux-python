@@ -59,15 +59,20 @@ BlueZ also provides an interactive commandline tool to interact with Bluetooth d
 
 To install Nuimo module and the Python3 D-Bus dependency globally, run:
 
-`sudo pip3 install nuimo`
-`sudo apt-get install python3-dbus`
+```
+sudo pip3 install nuimo
+sudo apt-get install python3-dbus
+```
 
 #### Running the Nuimo control script
 
 To test if your setup is working, run the following command. Note that it must be run as root because on Linux, Bluetooth discovery is a restricted operation.
 
-`sudo python3 nuimoctl.py --discover`
-`sudo python3 nuimoctl.py --connect AA:BB:CC:DD:EE:FF` (Replace the MAC address with your Nuimo's MAC address)
+```
+sudo nuimoctl --discover
+sudo nuimoctl --connect AA:BB:CC:DD:EE:FF # Replace the MAC address with your Nuimo's MAC address
+sudo nuimoctl --help # To list all available commands
+```
 
 ## SDK Usage
 
