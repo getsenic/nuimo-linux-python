@@ -78,7 +78,7 @@ The SDK entry point is the `ControllerManager` class. Check the following exampl
 Please note that communication with your Bluetooth adapter happens over BlueZ's D-Bus API, hence an event loop needs to be run in order to receive all Bluetooth related events. You can start and stop the event loop via `run()` and `stop()` calls to your `ControllerManager` instance.
 
 
-```
+```python
 import nuimo
 
 class ControllerManagerPrintListener(nuimo.ControllerManagerListener):
@@ -89,7 +89,6 @@ manager = nuimo.ControllerManager(adapter_name='hci0')
 manager.listener = ControllerManagerPrintListener()
 manager.start_discovery()
 manager.run()
-
 ```
 
 ### Connecting to a Nuimo controller and receiving user input events
@@ -100,16 +99,15 @@ Make sure to assign a `ControllerListener` object to the `listener` attribute of
 
 The following example connects to a Nuimo controller and uses the predefined `ControllerPrintListener` class to print all controller events:
 
-```
+```python
 import nuimo
 
 controller = nuimo.Controller(adapter_name='hci0', mac_address="AA:BB:CC:DD:EE:FF")
-controller.listener = nuimo.ControllerPrintListener(controller=controller)
+controller.listener = nuimo.ControllerListener() # Use an instance of your own nuimo.ControllerListener subclass
 controller.connect()
 
 manager = ControllerManager(adapter_name="hci0")
 manager.run()
-
 ```
 
 As with Nuimo controller discovery, remember to start the Bluetooth event loop with `ControllerManager.run()`.
@@ -118,7 +116,7 @@ As with Nuimo controller discovery, remember to start the Bluetooth event loop w
 
 Once a Nuimo controller is connected you can send an LED matrix to its display. Therefor create an `LedMatrix` object by initializing it with a string. That string should contain 81 characters: each character, starting from top left corner, tells whether the corresponding LED should be on or off. `' '` and `'0'` signal LED off all other characters power the corresponding LED. The following example shows a cross:
 
-```
+```python
 matrix = nuimo.LedMatrix(
     "*       *"
     " *     * "
@@ -133,11 +131,11 @@ matrix = nuimo.LedMatrix(
 controller.display_matrix(matrix)
 ```
 
-You can pass additional parameters to `display_matrix` to control the following options:
+You can pass additional parameters to `display_matrix()` to control the following options:
 * `interval: float` # Display interval in seconds, default: `2.0` seconds
 * `brightness: float` # LED matrix brightness, default: `1.0` (100%)
 * `fading: bool` # Whether to fade the previous matrix into the next one, aka "onion skinning effect", default: `False`
-* `ignore_duplicates: bool` # Whether or not send an LED matrix to a Nuimo controller if it's already being displayed, default: * `False`
+* `ignore_duplicates: bool` # Whether or not send an LED matrix to a Nuimo controller if it's already being displayed, default: `False`
 
 ## Support
 
