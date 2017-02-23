@@ -122,6 +122,9 @@ def main():
         controller.connect()
     elif args.disconnect:
         controller = nuimo.Controller(adapter_name=args.adapter, mac_address=args.disconnect)
+        if not controller.is_connected():
+            print("Already disconnected")
+            return
         controller.listener = ControllerTestListener(controller=controller)
         controller.disconnect()
 
