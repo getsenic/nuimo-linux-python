@@ -104,8 +104,6 @@ def main():
         help="Disconnect a Nuimo controller with a given MAC address")
     args = arg_parser.parse_args()
 
-    print("Terminate with Ctrl+C")
-
     global controller_manager
     controller_manager = nuimo.ControllerManager(adapter_name=args.adapter)
 
@@ -128,6 +126,7 @@ def main():
         controller.listener = ControllerTestListener(controller=controller)
         controller.disconnect()
 
+    print("Terminate with Ctrl+C")
     try:
         controller_manager.run()
     except KeyboardInterrupt:
