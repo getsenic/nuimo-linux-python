@@ -2,14 +2,17 @@ from setuptools import setup
 
 setup(
     name='nuimo',
+    packages=['nuimo', 'gatt'],
     version='0.1.0',
     description='Nuimo SDK for Python on Linux',
+    keywords='nuimo',
     url='https://github.com/getsenic/nuimo-linux-python',
-    maintainer='Senic GmbH',
-    maintainer_email='developers@senic.com',
+    download_url='https://github.com/getsenic/nuimo-linux-python/archive/0.1.0.tar.gz',
+    author='Senic GmbH',
+    author_email='developers@senic.com',
     license='MIT',
-    modules=['nuimo', 'gatt'],
-    entry_points="""
-        [console_scripts]
-        nuimoctl = nuimoctl:main
-    """)
+    py_modules=['nuimoctl'],
+    entry_points={
+        'console_scripts': ['nuimoctl = nuimoctl:main']
+    }
+)
