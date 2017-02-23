@@ -96,8 +96,7 @@ class DeviceManager:
     def start_discovery(self, service_uuids=[]):
         """Starts a discovery for BLE devices with given service UUIDs.
 
-        Args:
-            service_uuids: Filters the search to only return devices with given UUIDs.
+        :param service_uuids: Filters the search to only return devices with given UUIDs.
         """
 
         discovery_filter = {'Transport': 'le'}
@@ -441,7 +440,7 @@ class Characteristic:
         """
         Called when the write request has failed.
         """
-        if dbus_error.get_dbus_name() == "org.bluez.Error.InProgress":
+        if dbus_error.get_dbus_name() == 'org.bluez.Error.InProgress':
             error = errors.InProgress()
         else:
             error = errors.Unknown()
