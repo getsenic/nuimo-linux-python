@@ -86,7 +86,7 @@ class ControllerManagerPrintListener(nuimo.ControllerManagerListener):
         print("Discovered Nuimo controller", controller.mac_address)
 
 manager = nuimo.ControllerManager(adapter_name='hci0')
-manager.listener = nuimo.ControllerManagerPrintListener()
+manager.listener = ControllerManagerPrintListener()
 manager.start_discovery()
 manager.run()
 
@@ -112,11 +112,11 @@ manager.run()
 
 ```
 
-As with Nuimo controller discovery, remember to start the Bluetooth event loop with `ControllerManager.run()`. Please make sure to use the same `ControllerManager` for starting and stopping the event loop.
+As with Nuimo controller discovery, remember to start the Bluetooth event loop with `ControllerManager.run()`.
 
 ### Write to Nuimo's LED matrix
 
-Once a Nuimo controller is connected you can send an LED matrix to its display. Therefor create an `LedMatrix` object by initializing it with a string. That string should contain 81 characters: each character, starting from top left corner, tells whether the corresponding LED should be on or off. The following example shows a cross:
+Once a Nuimo controller is connected you can send an LED matrix to its display. Therefor create an `LedMatrix` object by initializing it with a string. That string should contain 81 characters: each character, starting from top left corner, tells whether the corresponding LED should be on or off. `' '` and `'0'` signal LED off all other characters power the corresponding LED. The following example shows a cross:
 
 ```
 matrix = nuimo.LedMatrix(
@@ -131,8 +131,13 @@ matrix = nuimo.LedMatrix(
     "*       *"
 )
 controller.display_matrix(matrix)
-
 ```
+
+You can pass additional parameters to `display_matrix` to control the following options:
+* `interval: float` # Display interval in seconds, default: `2.0` seconds
+* `brightness: float` # LED matrix brightness, default: `1.0` (100%)
+* `fading: bool` # Whether to fade the previous matrix into the next one, aka "onion skinning effect", default: `False`
+* `ignore_duplicates: bool` # Whether or not send an LED matrix to a Nuimo controller if it's already being displayed, default: * `False`
 
 ## Support
 
