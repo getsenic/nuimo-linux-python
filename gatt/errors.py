@@ -8,7 +8,3 @@ class InProgress(Exception):
 
 class Failed(Exception):
         pass
-
-
-class Unknown(Exception):
-        pass

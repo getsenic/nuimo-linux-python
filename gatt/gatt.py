@@ -107,7 +107,7 @@ class DeviceManager:
             if e.get_dbus_name() == 'org.bluez.Error.NotReady':
                 raise errors.NotReady("Bluetooth adapter not ready. Run 'hciconfig " + self.adapter_name + " up'.")
             else:
-                raise errors.Unknown() from e
+                raise errors.Failed() from e
 
     def stop_discovery(self):
         """
@@ -461,7 +461,7 @@ class Characteristic:
         if dbus_error.get_dbus_name() == 'org.bluez.Error.InProgress':
             error = errors.InProgress()
         else:
-            error = errors.Unknown()
+            error = errors.Failed()
 
         self.service.device.characteristic_write_value_failed(self, error)
 
