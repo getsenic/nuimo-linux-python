@@ -106,6 +106,7 @@ def main():
 
     print("Terminate with Ctrl+C")
 
+    global controller_manager
     controller_manager = nuimo.ControllerManager(adapter_name=args.adapter)
 
     if args.discover:
