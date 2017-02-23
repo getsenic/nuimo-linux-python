@@ -125,7 +125,10 @@ def main():
         controller.listener = ControllerTestListener(controller=controller)
         controller.disconnect()
 
-    controller_manager.run()
+    try:
+        controller_manager.run()
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == '__main__':
