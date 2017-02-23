@@ -345,6 +345,20 @@ class Device:
         # To be implemented by subclass
         pass
 
+    def characteristic_enable_notification_succeeded(self):
+        """
+        Called when a characteristic notification enable command succeeded.
+        """
+        # To be implemented by subclass
+        pass
+
+    def characteristic_enable_notification_failed(self, error):
+        """
+        Called when a characteristic notification enable command failed.
+        """
+        # To be implemented by subclass
+        pass
+
 
 class Service:
     """
@@ -467,8 +481,7 @@ class Characteristic:
         """
         Called when notification enabling has succeeded.
         """
-        # TODO: Call `self.device.characteristic_enable_notification_succeeded`
-        pass
+        self.service.device.characteristic_enable_notification_succeeded()
 
     def enable_notifications_failed(self, error):
         """
@@ -477,4 +490,4 @@ class Characteristic:
         if ((error.get_dbus_name() == 'org.bluez.Error.Failed') and
             (error.get_dbus_message() == "Already notifying")):
             return
-        # TODO: Call `self.device.characteristic_enable_notification_failed`
+        self.service.device.characteristic_enable_notification_failed(errors.Failed(error.get_dbus_message()))
