@@ -123,6 +123,9 @@ class Controller(gatt.Device):
             self.listener.started_connecting()
         super().connect()
 
+    def connect_succeded(self):
+        super().connect_succeeded()
+
     def connect_failed(self, error):
         if self.listener:
             self.listener.connect_failed(error)
@@ -137,13 +140,10 @@ class Controller(gatt.Device):
             self.listener.started_disconnecting()
         super().disconnect()
 
-    def connected(self):
-        super().connected()
-
-    def disconnected(self):
-        super().disconnected()
+    def disconnect_succeeded(self):
+        super().disconnect_succeeded()
         if self.listener:
-            self.listener.disconnected()
+            self.listener.disconnect_succeeded()
 
     def services_resolved(self):
         super().services_resolved()
@@ -178,9 +178,9 @@ class Controller(gatt.Device):
                 return
             characteristic.enable_notifications()
 
-        # TODO: Only fire `connected` when we read the firmware version or battery value as in other SDKs
+        # TODO: Only fire connected event when we read the firmware version or battery value as in other SDKs
         if self.listener:
-            self.listener.connected()
+            self.listener.connect_succeeded()
 
     def display_matrix(self, matrix, interval=2.0, brightness=1.0, fading=False, ignore_duplicates=False):
         """
@@ -335,7 +335,7 @@ class ControllerListener:
     def started_connecting(self):
         pass
 
-    def connected(self):
+    def connect_succeeded(self):
         pass
 
     def connect_failed(self, error):
@@ -344,7 +344,7 @@ class ControllerListener:
     def started_disconnecting(self):
         pass
 
-    def disconnected(self):
+    def disconnect_succeeded(self):
         pass
 
 

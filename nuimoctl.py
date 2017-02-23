@@ -17,7 +17,7 @@ class ControllerPrintListener(nuimo.ControllerListener):
     def started_connecting(self):
         self.print("connecting...")
 
-    def connected(self):
+    def connect_succeeded(self):
         self.print("connected")
 
     def connect_failed(self, error):
@@ -26,7 +26,7 @@ class ControllerPrintListener(nuimo.ControllerListener):
     def started_disconnecting(self):
         self.print("disconnecting...")
 
-    def disconnected(self):
+    def disconnect_succeeded(self):
         self.print("disconnected")
 
     def received_gesture_event(self, event):
@@ -46,8 +46,8 @@ class ControllerTestListener(ControllerPrintListener):
         controller_manager.stop()
         sys.exit(0)
 
-    def disconnected(self):
-        super().disconnected()
+    def disconnect_succeeded(self):
+        super().disconnect_succeeded()
 
         if self.auto_reconnect:
             # Reconnect as soon as Nuimo was disconnected

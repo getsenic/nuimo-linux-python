@@ -230,12 +230,6 @@ class Device:
         self._connect_retry_attempt = 0
         self._connect()
 
-    def connect_failed(self, error):
-        """
-        Called when the connection could not be established
-        """
-        pass
-
     def _connect(self):
         self._connect_retry_attempt += 1
         try:
@@ -259,20 +253,27 @@ class Device:
             else:
                 self.connect_failed(errors.Failed(e.get_dbus_message()))
 
-    def disconnect(self):
-        """
-        Disconnects from the device, if connected.
-        """
-        self.object.Disconnect()
-
-    def connected(self):
+    def connect_succeeded(self):
         """
         Will be called when `connect()` has finished connecting to the device.
         Will not be called if the device was already connected.
         """
         pass
 
-    def disconnected(self):
+    def connect_failed(self, error):
+        """
+        Called when the connection could not be established.
+        """
+        pass
+
+    def disconnect(self):
+        """
+        Disconnects from the device, if connected.
+        """
+        self.object.Disconnect()
+
+
+    def disconnect_succeeded(self):
         """
         Will be called when the device has disconnected.
         """
@@ -302,9 +303,9 @@ class Device:
         """
         if 'Connected' in changed_properties:
             if changed_properties['Connected']:
-                self.connected()
+                self.connect_succeeded()
             else:
-                self.disconnected()
+                self.disconnect_succeeded()
 
         if 'ServicesResolved' in changed_properties and changed_properties['ServicesResolved'] == 1:
             self.services_resolved()
