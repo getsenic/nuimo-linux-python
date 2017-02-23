@@ -102,8 +102,15 @@ class DeviceManager:
         discovery_filter = {'Transport': 'le'}
         if service_uuids:  # D-Bus doesn't like empty lists, it needs to guess the type
             discovery_filter['UUIDs'] = service_uuids
-        self.adapter.SetDiscoveryFilter(discovery_filter)
-        self.adapter.StartDiscovery()
+
+        try:
+            self.adapter.SetDiscoveryFilter(discovery_filter)
+            self.adapter.StartDiscovery()
+        except dbus.exceptions.DBusException as e:
+            if e.get_dbus_name() == 'org.bluez.Error.NotReady':
+                raise errors.NotReady("Bluetooth adapter not ready. Run 'hciconfig " + self.adapter_name + " up'.")
+            else:
+                raise errors.Unknown() from e
 
     def stop_discovery(self):
         """

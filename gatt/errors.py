@@ -1,3 +1,7 @@
+class NotReady(Exception):
+        pass
+
+
 class InProgress(Exception):
         pass
 
