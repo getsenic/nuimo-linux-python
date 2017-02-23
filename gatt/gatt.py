@@ -105,9 +105,9 @@ class DeviceManager:
             self.adapter.StartDiscovery()
         except dbus.exceptions.DBusException as e:
             if e.get_dbus_name() == 'org.bluez.Error.NotReady':
-                raise errors.NotReady("Bluetooth adapter not ready. Run 'hciconfig " + self.adapter_name + " up'.")
+                raise errors.NotReady("Bluetooth adapter not ready. Run 'hciconfig %s up'." % self.adapter_name)
             else:
-                raise errors.Failed() from e
+                raise errors.Failed(e.get_dbus_message())
 
     def stop_discovery(self):
         """
