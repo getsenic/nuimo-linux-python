@@ -111,7 +111,7 @@ controller = nuimo.Controller(adapter_name='hci0', mac_address='AA:BB:CC:DD:EE:F
 controller.listener = nuimo.ControllerListener() # Use an instance of your own nuimo.ControllerListener subclass
 controller.connect()
 
-manager = ControllerManager(adapter_name='hci0')
+manager = nuimo.ControllerManager(adapter_name='hci0')
 manager.run()
 ```
 
