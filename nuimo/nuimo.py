@@ -269,7 +269,7 @@ class _LedMatrixWriter():
         self.brightness = 0
         self.fading = False
         self.is_waiting_for_response = False
-        self.write_on_response = True
+        self.write_on_response = False
 
     def write(self, matrix, interval, brightness, fading, ignore_duplicates):
         if (ignore_duplicates and
