@@ -1,10 +1,8 @@
+from sys import argv
 from threading import Thread
 from time import sleep
 
 from nuimo import Controller, ControllerManager, ControllerListener, LedMatrix
-
-
-MAC_ADDRESS = "c4:d7:54:71:e2:ce"
 
 
 class NuimoListener(ControllerListener):
@@ -12,10 +10,10 @@ class NuimoListener(ControllerListener):
         self.controller = controller
 
         self.stopping = False
-        self.t = Thread(target=self.show_dots)
+        self.thread = Thread(target=self.show_dots)
 
     def connect_succeeded(self):
-        self.t.start()
+        self.thread.start()
 
     def show_dots(self):
         num_dots = 1
@@ -35,17 +33,24 @@ class NuimoListener(ControllerListener):
         self.stopping = True
 
 
-controller = Controller(adapter_name="hci0", mac_address=MAC_ADDRESS)
-listener = NuimoListener(controller)
-controller.listener = listener
-controller.connect()
+def main(mac_address):
+    controller = Controller(adapter_name="hci0", mac_address=mac_address)
+    listener = NuimoListener(controller)
+    controller.listener = listener
+    controller.connect()
+
+    manager = ControllerManager()
+
+    try:
+        manager.run()
+    except KeyboardInterrupt:
+        print("Stopping...")
+        listener.stop()
+        manager.stop()
 
 
-manager = ControllerManager()
-
-try:
-    manager.run()
-except KeyboardInterrupt:
-    print("Stopping...")
-    listener.stop()
-    manager.stop()
+if __name__ == "__main__":
+    if len(argv) > 1:
+        main(argv[-1])
+    else:
+        print("Usage: {} <nuimo_mac_address>".format(argv[0]))
