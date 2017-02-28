@@ -4,7 +4,7 @@
 The Nuimo Python SDK for Linux allows you to integrate your Nuimo(s) into any type of Linux application or script that can execute Python code.
 
 ## Prerequisites
-The Nuimo SDK requires [Python 3.4+](https://www.python.org) and a recent installation of [BlueZ](http://www.bluez.org/). It is tested to work fine with BlueZ 5.43, slightly older versions should however work, too.
+The Nuimo SDK requires [Python 3.4+](https://www.python.org) and a recent installation of [BlueZ](http://www.bluez.org/). It is tested to work fine with BlueZ 5.44, slightly older versions should however work, too.
 
 ## Installation
 These instructions assume a Debian-based Linux.
@@ -19,7 +19,7 @@ On Linux the [BlueZ](http://www.bluez.org/) library is necessary to access your 
 
 ### Installing BlueZ from sources
 
-The `bluetoothd` daemon provides BlueZ's D-Bus interfaces that is accessed by the Nuimo SDK to communicate with Nuimo Bluetooth controllers. The following commands download BlueZ 5.43 sources, built them and replace any pre-installed `bluetoothd` daemon. It's not suggested to remove any pre-installed BlueZ package as its deinstallation might remove necessary Bluetooth drivers as well.
+The `bluetoothd` daemon provides BlueZ's D-Bus interfaces that is accessed by the Nuimo SDK to communicate with Nuimo Bluetooth controllers. The following commands download BlueZ 5.44 sources, built them and replace any pre-installed `bluetoothd` daemon. It's not suggested to remove any pre-installed BlueZ package as its deinstallation might remove necessary Bluetooth drivers as well.
 
 1. `sudo systemctl stop bluetooth`
 2. `sudo apt-get update`
@@ -27,9 +27,9 @@ The `bluetoothd` daemon provides BlueZ's D-Bus interfaces that is accessed by th
 4. `cd`
 5. `mkdir bluez`
 6. `cd bluez`
-7. `wget http://www.kernel.org/pub/linux/bluetooth/bluez-5.43.tar.xz`
-8. `tar xf bluez-5.43.tar.xz`
-9. `cd bluez-5.43`
+7. `wget http://www.kernel.org/pub/linux/bluetooth/bluez-5.44.tar.xz`
+8. `tar xf bluez-5.44.tar.xz`
+9. `cd bluez-5.44`
 10. `./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-library`
 11. `make`
 12. `sudo make install`
@@ -38,7 +38,7 @@ The `bluetoothd` daemon provides BlueZ's D-Bus interfaces that is accessed by th
 15. `sudo install -v -m644 src/main.conf /etc/bluetooth/main.conf`
 16. `sudo systemctl daemon-reload`
 17. `sudo systemctl start bluetooth`
-18. `bluetoothd --version` # should now print 5.43
+18. `bluetoothd --version` # should now print 5.44
 
 Please note that some distributions might use a different directory for system deamons, apply step 13 only as needed.
 
