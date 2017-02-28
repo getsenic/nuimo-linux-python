@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='nuimo',
     packages=['nuimo', 'gatt'],
-    version='0.1.0',
+    version='0.1.1',
     description='Nuimo SDK for Python on Linux',
     keywords='nuimo',
     url='https://github.com/getsenic/nuimo-linux-python',
