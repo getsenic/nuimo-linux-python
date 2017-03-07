@@ -4,7 +4,7 @@ setup(
     name='nuimo',
     packages=['nuimo'],
     install_requires=['gatt>=0.1.3'],
-    version='0.2.2',
+    version='0.2.3',
     description='Nuimo SDK for Python on Linux',
     keywords='nuimo',
     url='https://github.com/getsenic/nuimo-linux-python',
