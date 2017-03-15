@@ -38,7 +38,7 @@ class ControllerManager(gatt.DeviceManager):
         device = super().make_device(mac_address)
         if device.alias() != 'Nuimo':
             return None
-        return Controller(adapter_name=self.adapter_name, mac_address=mac_address)
+        return Controller(mac_address=mac_address, manager=self)
 
     def device_discovered(self, device):
         super().device_discovered(device)
@@ -101,14 +101,14 @@ class Controller(gatt.Device):
         UNNAMED2_SERVICE_UUID,
         UNNAMED3_SERVICE_UUID]
 
-    def __init__(self, adapter_name, mac_address):
+    def __init__(self, mac_address, manager):
         """
         Create an instance with given Bluetooth adapter name and MAC address.
 
-        :param adapter_name: name of the Bluetooth adapter, i.e. ``hci0`` (default)
         :param mac_address: MAC address of Nuimo controller with format: ``AA:BB:CC:DD:EE:FF``
+        :param manager: reference to the `ControllerManager` that manages this controller
         """
-        super().__init__(adapter_name, mac_address)
+        super().__init__(mac_address, manager=manager)
         self.listener = None
         self._matrix_writer = _LedMatrixWriter(controller=self)
 

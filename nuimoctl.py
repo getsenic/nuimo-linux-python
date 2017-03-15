@@ -111,15 +111,15 @@ def main():
         controller_manager.listener = ControllerManagerPrintListener()
         controller_manager.start_discovery()
     elif args.connect:
-        controller = nuimo.Controller(adapter_name=args.adapter, mac_address=args.connect)
+        controller = nuimo.Controller(mac_address=args.connect, manager=controller_manager)
         controller.listener = ControllerTestListener(controller=controller)
         controller.connect()
     elif args.auto:
-        controller = nuimo.Controller(adapter_name=args.adapter, mac_address=args.auto)
+        controller = nuimo.Controller(mac_address=args.auto, manager=controller_manager)
         controller.listener = ControllerTestListener(controller=controller, auto_reconnect=True)
         controller.connect()
     elif args.disconnect:
-        controller = nuimo.Controller(adapter_name=args.adapter, mac_address=args.disconnect)
+        controller = nuimo.Controller(mac_address=args.disconnect, manager=controller_manager)
         if not controller.is_connected():
             print("Already disconnected")
             return
@@ -130,8 +130,7 @@ def main():
     try:
         controller_manager.run()
     except KeyboardInterrupt:
-        pass
-
+        controller_manager.stop()
 
 if __name__ == '__main__':
     main()
