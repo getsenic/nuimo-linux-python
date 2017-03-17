@@ -108,7 +108,8 @@ class Controller(gatt.Device):
         :param mac_address: MAC address of Nuimo controller with format: ``AA:BB:CC:DD:EE:FF``
         :param manager: reference to the `ControllerManager` that manages this controller
         """
-        super().__init__(mac_address, manager=manager)
+        super().__init__(mac_address=mac_address, manager=manager)
+
         self.listener = None
         self._matrix_writer = _LedMatrixWriter(controller=self)
 
@@ -124,9 +125,11 @@ class Controller(gatt.Device):
         super().connect()
 
     def connect_succeded(self):
+        super.connect_succeeded()
         super().connect_succeeded()
 
     def connect_failed(self, error):
+        super.connect_failed(error)
         if self.listener:
             self.listener.connect_failed(error)
 

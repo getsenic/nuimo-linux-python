@@ -120,17 +120,14 @@ def main():
         controller.connect()
     elif args.disconnect:
         controller = nuimo.Controller(mac_address=args.disconnect, manager=controller_manager)
-        if not controller.is_connected():
-            print("Already disconnected")
-            return
-        controller.listener = ControllerTestListener(controller=controller)
         controller.disconnect()
+        return
 
     print("Terminate with Ctrl+C")
     try:
         controller_manager.run()
     except KeyboardInterrupt:
-        controller_manager.stop()
+        pass
 
 if __name__ == '__main__':
     main()
