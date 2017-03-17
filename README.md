@@ -107,11 +107,12 @@ The following example connects to a Nuimo controller and uses the predefined `Co
 ```python
 import nuimo
 
-controller = nuimo.Controller(adapter_name='hci0', mac_address='AA:BB:CC:DD:EE:FF')
+manager = nuimo.ControllerManager(adapter_name='hci0')
+
+controller = nuimo.Controller(mac_address='AA:BB:CC:DD:EE:FF', manager=manager)
 controller.listener = nuimo.ControllerListener() # Use an instance of your own nuimo.ControllerListener subclass
 controller.connect()
 
-manager = nuimo.ControllerManager(adapter_name='hci0')
 manager.run()
 ```
 
