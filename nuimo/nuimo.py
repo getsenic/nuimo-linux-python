@@ -125,11 +125,11 @@ class Controller(gatt.Device):
         super().connect()
 
     def connect_succeded(self):
-        super.connect_succeeded()
+        super().connect_succeeded()
         super().connect_succeeded()
 
     def connect_failed(self, error):
-        super.connect_failed(error)
+        super().connect_failed(error)
         if self.listener:
             self.listener.connect_failed(error)
 
