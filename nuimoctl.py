@@ -88,6 +88,10 @@ def main():
         action='store_true',
         help="Lists all nearby Nuimo controllers")
     arg_commands_group.add_argument(
+        '--known',
+        action='store_true',
+        help="Lists all known Nuimo controllers")
+    arg_commands_group.add_argument(
         '--connect',
         metavar='address',
         type=str,
@@ -110,6 +114,10 @@ def main():
     if args.discover:
         controller_manager.listener = ControllerManagerPrintListener()
         controller_manager.start_discovery()
+    if args.known:
+        for controller in controller_manager.controllers():
+            print("[%s] %s" % (controller.mac_address, controller.alias()))
+        return
     elif args.connect:
         controller = nuimo.Controller(mac_address=args.connect, manager=controller_manager)
         controller.listener = ControllerTestListener(controller=controller)
