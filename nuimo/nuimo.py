@@ -35,7 +35,7 @@ class ControllerManager(gatt.DeviceManager):
         super().start_discovery(service_uuids=Controller.SERVICE_UUIDS)
 
     def make_device(self, mac_address):
-        device = super().make_device(mac_address)
+        device = gatt.Device(mac_address=mac_address, manager=self, managed=False)
         if device.alias() != 'Nuimo':
             return None
         return Controller(mac_address=mac_address, manager=self)
@@ -56,6 +56,7 @@ class ControllerManagerListener:
     Assign an instance of your subclass to the ``listener`` attribute of your
     ``ControllerManager`` to receive discovery events.
     """
+
     def controller_discovered(self, controller):
         """
         This method gets called once for each Nuimo controller discovered nearby.
@@ -79,6 +80,7 @@ class Controller(gatt.Device):
     :ivar mac_address: MAC address of this Nuimo controller
     :ivar listener: instance of ``ControllerListener`` that will be notified with all events
     """
+
     NUIMO_SERVICE_UUID                    = 'f29b1525-cb19-40f3-be5c-7241ecb82fd2'
     BUTTON_CHARACTERISTIC_UUID            = 'f29b1529-cb19-40f3-be5c-7241ecb82fd2'
     TOUCH_CHARACTERISTIC_UUID             = 'f29b1527-cb19-40f3-be5c-7241ecb82fd2'
