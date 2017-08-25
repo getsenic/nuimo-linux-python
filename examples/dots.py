@@ -34,12 +34,11 @@ class NuimoListener(ControllerListener):
 
 
 def main(mac_address):
-    controller = Controller(adapter_name="hci0", mac_address=mac_address)
+    manager = ControllerManager(adapter_name="hci0")
+    controller = Controller(mac_address=mac_address, manager=manager)
     listener = NuimoListener(controller)
     controller.listener = listener
     controller.connect()
-
-    manager = ControllerManager()
 
     try:
         manager.run()
