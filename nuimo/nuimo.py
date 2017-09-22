@@ -2,6 +2,7 @@ import functools
 import gatt
 from datetime import datetime
 from enum import Enum
+import binascii
 
 
 class ControllerManager(gatt.DeviceManager):
@@ -85,6 +86,7 @@ class Controller(gatt.Device):
     ROTATION_CHARACTERISTIC_UUID          = 'f29b1528-cb19-40f3-be5c-7241ecb82fd2'
     FLY_CHARACTERISTIC_UUID               = 'f29b1526-cb19-40f3-be5c-7241ecb82fd2'
     LED_MATRIX_CHARACTERISTIC_UUID        = 'f29b152d-cb19-40f3-be5c-7241ecb82fd2'
+    BATTERY_CHARACTERISTIC_UUID           = '00002a19-0000-1000-8000-00805f9b34fb'
 
     LEGACY_LED_MATRIX_SERVICE             = 'f29b1523-cb19-40f3-be5c-7241ecb82fd1'
     LEGACY_LED_MATRIX_CHARACTERISTIC_UUID = 'f29b1524-cb19-40f3-be5c-7241ecb82fd1'
@@ -92,14 +94,14 @@ class Controller(gatt.Device):
     # TODO: Give services their actual names
     UNNAMED1_SERVICE_UUID                 = '00001801-0000-1000-8000-00805f9b34fb'
     UNNAMED2_SERVICE_UUID                 = '0000180a-0000-1000-8000-00805f9b34fb'
-    UNNAMED3_SERVICE_UUID                 = '0000180f-0000-1000-8000-00805f9b34fb'
+    BATTERY_SERVICE_UUID                  = '0000180f-0000-1000-8000-00805f9b34fb'
 
     SERVICE_UUIDS = [
         NUIMO_SERVICE_UUID,
         LEGACY_LED_MATRIX_SERVICE,
         UNNAMED1_SERVICE_UUID,
         UNNAMED2_SERVICE_UUID,
-        UNNAMED3_SERVICE_UUID]
+        BATTERY_SERVICE_UUID]
 
     def __init__(self, mac_address, manager):
         """
@@ -112,6 +114,7 @@ class Controller(gatt.Device):
 
         self.listener = None
         self._matrix_writer = _LedMatrixWriter(controller=self)
+        self.battery_level = None
 
     def connect(self):
         """
@@ -181,9 +184,28 @@ class Controller(gatt.Device):
                 return
             characteristic.enable_notifications()
 
+        battery_service = next((service for service in self.services if service.uuid == self.BATTERY_SERVICE_UUID), None)
+        if battery_service is None:
+            if self.listener:
+                # TODO: Use proper exception subclass
+                self.listener.connect_failed(Exception("Nuimo GATT service missing"))
+            return
+
+        battery_characteristic = next((
+            characteristic for characteristic in battery_service.characteristics
+            if characteristic.uuid == self.BATTERY_CHARACTERISTIC_UUID), None)
+        if battery_characteristic is None:
+            # TODO: Use proper exception subclass
+            self.listener.connect_failed(Exception("Nuimo GATT characteristic " + self.BATTERY_CHARACTERISTIC_UUID + " missing"))
+            return
+        battery_characteristic.read_value()
+        battery_characteristic.enable_notifications()
         # TODO: Only fire connected event when we read the firmware version or battery value as in other SDKs
         if self.listener:
             self.listener.connect_succeeded()
+
+    def read_battery_level(self):
+        return self.battery_level
 
     def display_matrix(self, matrix, interval=2.0, brightness=1.0, fading=False, ignore_duplicates=False):
         """
@@ -208,7 +230,8 @@ class Controller(gatt.Device):
             self.BUTTON_CHARACTERISTIC_UUID:   self._notify_button_event,
             self.TOUCH_CHARACTERISTIC_UUID:    self._notify_touch_event,
             self.ROTATION_CHARACTERISTIC_UUID: self._notify_rotation_event,
-            self.FLY_CHARACTERISTIC_UUID:      self._notify_fly_event
+            self.FLY_CHARACTERISTIC_UUID:      self._notify_fly_event,
+            self.BATTERY_CHARACTERISTIC_UUID:  self._update_battery_level
         }[characteristic.uuid](value)
 
     def characteristic_write_value_succeeded(self, characteristic):
@@ -257,6 +280,9 @@ class Controller(gatt.Device):
     def _notify_gesture_event(self, gesture, value=None):
         if self.listener:
             self.listener.received_gesture_event(GestureEvent(gesture=gesture, value=value))
+
+    def _update_battery_level(self, value):
+        self.battery_level = int(binascii.hexlify(value), 16)
 
 
 class _LedMatrixWriter():
