@@ -281,6 +281,7 @@ class Controller(gatt.Device):
 
     def _update_battery_level(self, value):
         self.battery_level = int(binascii.hexlify(value), 16)
+        self._notify_gesture_event(gesture=Gesture.BATTERY_LEVEL, value=self.battery_level)
 
 
 class _LedMatrixWriter():
@@ -411,7 +412,8 @@ class Gesture(Enum):
     ROTATION = 16,
     FLY_LEFT = 17,
     FLY_RIGHT = 18,
-    FLY_UPDOWN = 19
+    FLY_UPDOWN = 19,
+    BATTERY_LEVEL = 20
 
 
 class LedMatrix:
