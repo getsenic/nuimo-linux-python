@@ -101,8 +101,6 @@ class Controller(gatt.Device):
     SERVICE_UUIDS = [
         NUIMO_SERVICE_UUID,
         LEGACY_LED_MATRIX_SERVICE,
-        UNNAMED1_SERVICE_UUID,
-        UNNAMED2_SERVICE_UUID,
         BATTERY_SERVICE_UUID]
 
     def __init__(self, mac_address, manager):
@@ -142,7 +140,8 @@ class Controller(gatt.Device):
         """
         if self.listener:
             self.listener.started_disconnecting()
-        super().disconnect()
+        super().disconnect()UNNAMED1_SERVICE_UUID,
+        UNNAMED2_SERVICE_UUID,
 
     def disconnect_succeeded(self):
         super().disconnect_succeeded()
