@@ -274,6 +274,8 @@ class Controller(gatt.Device):
             self._notify_gesture_event(gesture=Gesture.FLY_RIGHT)
         elif value[0] == 4:
             self._notify_gesture_event(gesture=Gesture.FLY_UPDOWN, value=value[1])
+        elif value[0] == 7:
+            self._notify_gesture_event(gesture=Gesture.NFC_READ, value=value[1])
 
     def _notify_gesture_event(self, gesture, value=None):
         if self.listener:
@@ -413,7 +415,8 @@ class Gesture(Enum):
     FLY_LEFT = 17,
     FLY_RIGHT = 18,
     FLY_UPDOWN = 19,
-    BATTERY_LEVEL = 20
+    BATTERY_LEVEL = 20,
+    NFC_READ = 21
 
 
 class LedMatrix:
