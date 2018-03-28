@@ -118,6 +118,16 @@ class Controller(gatt.Device):
         self._matrix_writer = _LedMatrixWriter(controller=self)
         self.battery_level = None
 
+        #[Alan] Connecting to the System Bus
+        import dbus
+        bus = dbus.SystemBus()
+        battery_properties_changed_signal = bus.add_signal_receiver(
+                                battery_properties_changed_CB,
+                                dbus_interface=dbus.PROPERTIES_IFACE,
+                                signal_name='PropertiesChanged',
+                                arg0='org.bluez.Battery1',
+                                path_keyword='path')
+
     def connect(self):
         """
         Tries to connect to this Nuimo controller and blocks until it has connected
@@ -182,23 +192,25 @@ class Controller(gatt.Device):
                 return
             characteristic.enable_notifications()
 
-        battery_service = next((service for service in self.services if service.uuid == self.BATTERY_SERVICE_UUID), None)
-        if battery_service is None:
-            if self.listener:
-                # TODO: Use proper exception subclass
-                self.listener.connect_failed(Exception("Nuimo GATT service missing"))
-            return
-
-        battery_characteristic = next((
-            characteristic for characteristic in battery_service.characteristics
-            if characteristic.uuid == self.BATTERY_CHARACTERISTIC_UUID), None)
-        if battery_characteristic is None:
-            # TODO: Use proper exception subclass
-            self.listener.connect_failed(Exception("Nuimo GATT characteristic " + self.BATTERY_CHARACTERISTIC_UUID + " missing"))
-            return
-        battery_characteristic.read_value()
-        battery_characteristic.enable_notifications()
-        # TODO: Only fire connected event when we read the firmware version or battery value as in other SDKs
+        # [Alan] The battery service is no longer in GATT for master BlueZ
+#
+#        battery_service = next((service for service in self.services if service.uuid == self.BATTERY_SERVICE_UUID), None)
+#        if battery_service is None:
+#            if self.listener:
+#                # TODO: Use proper exception subclass
+#                self.listener.connect_failed(Exception("Nuimo GATT service missing"))
+#            return
+#
+#        battery_characteristic = next((
+#            characteristic for characteristic in battery_service.characteristics
+#            if characteristic.uuid == self.BATTERY_CHARACTERISTIC_UUID), None)
+#        if battery_characteristic is None:
+#            # TODO: Use proper exception subclass
+#            self.listener.connect_failed(Exception("Nuimo GATT characteristic " + self.BATTERY_CHARACTERISTIC_UUID + " missing"))
+#            return
+#        battery_characteristic.read_value()
+#        battery_characteristic.enable_notifications()
+#        # TODO: Only fire connected event when we read the firmware version or battery value as in other SDKs
         if self.listener:
             self.listener.connect_succeeded()
 
@@ -224,6 +236,10 @@ class Controller(gatt.Device):
         )
 
     def characteristic_value_updated(self, characteristic, value):
+
+        # [Alan] This will never give the self.BATTERY_CHARACTERISTIC_UUID with
+        # the latest BlueZ.
+
         {
             self.BUTTON_CHARACTERISTIC_UUID:   self._notify_button_event,
             self.TOUCH_CHARACTERISTIC_UUID:    self._notify_touch_event,
@@ -276,10 +292,19 @@ class Controller(gatt.Device):
             self._notify_gesture_event(gesture=Gesture.FLY_UPDOWN, value=value[1])
 
     def _notify_gesture_event(self, gesture, value=None):
+        """ [Alan} This triggers the callback in nuimo_app """
         if self.listener:
             self.listener.received_gesture_event(GestureEvent(gesture=gesture, value=value))
 
     def _update_battery_level(self, value):
+        self.battery_level = int(binascii.hexlify(value), 16)
+        self._notify_gesture_event(gesture=Gesture.BATTERY_LEVEL, value=self.battery_level)
+
+    def _update_battery_level_bluez_master(self, value):
+        #[Alan] This should be modified to trigger when there is a change emitted
+        # regarding property in org.bluez.Battery1 """
+
+        # The value needs to be pasesd as a Gesture.
         self.battery_level = int(binascii.hexlify(value), 16)
         self._notify_gesture_event(gesture=Gesture.BATTERY_LEVEL, value=self.battery_level)
 
@@ -313,7 +338,7 @@ class _LedMatrixWriter():
         self.fading = fading
 
         if (self.is_waiting_for_response and
-            (datetime.now() - self.last_written_matrix_date).total_seconds() < 1.0):
+           (datetime.now() - self.last_written_matrix_date).total_seconds() < 1.0):
             self.write_on_response = True
         else:
             self.write_now()
