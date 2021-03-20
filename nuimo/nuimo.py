@@ -224,13 +224,15 @@ class Controller(gatt.Device):
         )
 
     def characteristic_value_updated(self, characteristic, value):
-        {
+        notify_mapping = {
             self.BUTTON_CHARACTERISTIC_UUID:   self._notify_button_event,
             self.TOUCH_CHARACTERISTIC_UUID:    self._notify_touch_event,
             self.ROTATION_CHARACTERISTIC_UUID: self._notify_rotation_event,
             self.FLY_CHARACTERISTIC_UUID:      self._notify_fly_event,
             self.BATTERY_CHARACTERISTIC_UUID:  self._update_battery_level
-        }[characteristic.uuid](value)
+        }
+        if(characteristic.uuid in notify_mapping):
+            notify_mapping[characteristic.uuid](value)
 
     def characteristic_write_value_succeeded(self, characteristic):
         if characteristic.uuid == self.LED_MATRIX_CHARACTERISTIC_UUID:
